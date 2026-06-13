@@ -81,17 +81,25 @@ function Stepper({ p, onAvancar }: { p: Proposicao; onAvancar: (key: string) => 
   );
 }
 
+type Sessao = { id: string; data: string; tipo: string; numero?: number; status: string };
+
 export default function ProposicoesPage() {
   const [lista, setLista] = useState<Proposicao[]>([]);
   const [vereadores, setVereadores] = useState<Vereador[]>([]);
   const [executivo, setExecutivo] = useState<Vereador[]>([]);
   const [comissoes, setComissoes] = useState<Comissao[]>([]);
+  const [sessoes, setSessoes] = useState<Sessao[]>([]);
 
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
   const [verProp, setVerProp] = useState<Proposicao | null>(null);
+
+  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
+  const [modalPauta, setModalPauta] = useState(false);
+  const [sessaoId, setSessaoId] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
@@ -100,15 +108,17 @@ export default function ProposicoesPage() {
     const params = new URLSearchParams();
     if (filtroTipo) params.set("tipo", filtroTipo);
     if (filtroStatus) params.set("status", filtroStatus);
-    const [p, v, c] = await Promise.all([
+    const [p, v, c, s] = await Promise.all([
       fetch(`/api/proposicoes?${params}`).then(r => r.json()),
       fetch("/api/vereadores").then(r => r.json()),
       fetch("/api/comissoes").then(r => r.json()),
+      fetch("/api/sessoes").then(r => r.json()),
     ]);
     setLista(p);
     setVereadores(v.filter((vr: any) => vr.ativo && vr.poder === "legislativo"));
     setExecutivo(v.filter((vr: any) => vr.ativo && vr.poder === "executivo"));
     setComissoes(c.filter((c: any) => c.ativa));
+    setSessoes(s.filter((ss: any) => ss.status === "agendada"));
   }
 
   useEffect(() => { carregar(); }, [filtroTipo, filtroStatus]);
@@ -177,6 +187,31 @@ export default function ProposicoesPage() {
     carregar();
   }
 
+  function toggleSelecionada(id: string) {
+    setSelecionadas(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  async function enviarParaPauta() {
+    if (!sessaoId) return;
+    setEnviando(true);
+    const res = await fetch("/api/pauta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessaoId, proposicaoIds: Array.from(selecionadas) }),
+    });
+    const result = await res.json();
+    setEnviando(false);
+    setModalPauta(false);
+    setSelecionadas(new Set());
+    setSessaoId("");
+    carregar();
+    if (result.duplicadas > 0) alert(`${result.adicionadas} adicionada(s). ${result.duplicadas} já estavam na pauta.`);
+  }
+
   async function avancarEtapa(id: string, etapaAtual: string) {
     await fetch(`/api/proposicoes/${id}`, {
       method: "PUT",
@@ -196,6 +231,23 @@ export default function ProposicoesPage() {
           <h1 className="text-2xl font-bold text-gray-800">Proposições</h1>
           <p className="text-gray-500 text-sm">{lista.length} registros</p>
         </div>
+
+        {/* Botão central Enviar para Pauta */}
+        <div className="flex-1 flex justify-center">
+          {selecionadas.size > 0 && (
+            <button
+              onClick={() => { setSessaoId(""); setModalPauta(true); }}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white shadow-md transition"
+              style={{ background: "#8B0000" }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Enviar para Pauta ({selecionadas.size})
+            </button>
+          )}
+        </div>
+
         <button onClick={abrirNova} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
           + Nova Proposição
         </button>
@@ -217,8 +269,19 @@ export default function ProposicoesPage() {
           <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400">Nenhuma proposição encontrada.</div>
         )}
         {lista.map((p) => (
-          <div key={p.id} className="bg-white rounded-xl shadow-sm p-5">
+          <div key={p.id}
+            className="bg-white rounded-xl shadow-sm p-5 transition"
+            style={selecionadas.has(p.id) ? { outline: "2px solid #8B0000", outlineOffset: 2 } : {}}>
             <div className="flex items-start justify-between gap-4">
+              {/* Checkbox de seleção */}
+              <div className="flex-shrink-0 pt-0.5">
+                <input
+                  type="checkbox"
+                  checked={selecionadas.has(p.id)}
+                  onChange={() => toggleSelecionada(p.id)}
+                  className="w-4 h-4 rounded cursor-pointer accent-red-800"
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-bold text-gray-800">{tipoLabel[p.tipo]} {p.numero}/{p.ano}</span>
@@ -260,6 +323,58 @@ export default function ProposicoesPage() {
           </div>
         ))}
       </div>
+
+      {/* Modal Enviar para Pauta */}
+      {modalPauta && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h2 className="font-bold text-lg text-gray-800 mb-1">Enviar para Pauta</h2>
+            <p className="text-sm text-gray-500 mb-4">{selecionadas.size} proposição(ões) selecionada(s)</p>
+
+            {sessoes.length === 0 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+                Nenhuma sessão agendada encontrada. Cadastre uma sessão primeiro em <strong>Sessões & Pautas</strong>.
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Selecione a Sessão</label>
+                <select
+                  value={sessaoId}
+                  onChange={(e) => setSessaoId(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                  style={{ focusRingColor: "#8B0000" } as any}
+                >
+                  <option value="">Selecione...</option>
+                  {sessoes.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {new Date(s.data).toLocaleDateString("pt-BR")} — {s.tipo.charAt(0).toUpperCase() + s.tipo.slice(1)}{s.numero ? ` nº ${s.numero}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-2">
+                  As proposições passarão automaticamente para a etapa <strong>Pautado</strong> e permanecerão em tramitação até o resultado da votação.
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setModalPauta(false)} className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50">
+                Cancelar
+              </button>
+              {sessoes.length > 0 && (
+                <button
+                  onClick={enviarParaPauta}
+                  disabled={!sessaoId || enviando}
+                  className="flex-1 text-white rounded-lg py-2 text-sm font-medium transition disabled:opacity-50"
+                  style={{ background: "#8B0000" }}
+                >
+                  {enviando ? "Enviando..." : "Confirmar"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal visualizar */}
       {verProp && (
