@@ -1,0 +1,1 @@
+ALTER TABLE "Proposicao" ADD COLUMN IF NOT EXISTS "destinoFinal" TEXT NOT NULL DEFAULT 'sancao';

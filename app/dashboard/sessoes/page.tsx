@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-type Proposicao = { id: string; numero: string; ano: number; tipo: string; ementa: string; status: string; etapaAtual: string };
+type Proposicao = { id: string; numero: string; ano: number; tipo: string; ementa: string; status: string; etapaAtual: string; destinoFinal?: string };
 type PautaItem = { id: string; proposicao: Proposicao; ordem: number; secao: string; resultado?: string };
 type Sessao = { id: string; data: string; tipo: string; numero?: number; ano?: number; local?: string; status: string; itens: PautaItem[] };
 
@@ -456,11 +456,13 @@ function PautaItemRow({
               onClick={onSancao}
               className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition"
             >
-              → Encaminhar à Sanção
+              → {item.proposicao.destinoFinal === "promulgacao" ? "Promulgar" : "Encaminhar à Sanção"}
             </button>
           )}
           {(item.proposicao.etapaAtual === "aguardando_sancao") && (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">Ag. Sanção</span>
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">
+              {item.proposicao.destinoFinal === "promulgacao" ? "Promulgar" : "Ag. Sanção"}
+            </span>
           )}
         </div>
       </div>

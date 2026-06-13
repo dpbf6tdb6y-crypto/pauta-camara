@@ -90,6 +90,7 @@ model Proposicao {
   regimeUrgencia      Boolean  @default(false)
   numVotacoes         Int      @default(1)
   etapaAtual          String   @default("protocolado")
+  destinoFinal        String   @default("sancao")
   createdAt           DateTime @default(now())
 
   autorVereador Vereador?           @relation("AutorVereador", fields: [autorVereadorId], references: [id])

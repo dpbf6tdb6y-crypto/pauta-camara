@@ -10,6 +10,7 @@ type Proposicao = {
   dataEntrada: string; status: string;
   dispensaParecer: boolean; dispensaIntersticio: boolean;
   regimeUrgencia: boolean; numVotacoes: number; etapaAtual: string;
+  destinoFinal: string;
   comissoes: ComissaoItem[];
 };
 
@@ -40,7 +41,7 @@ const emptyForm = {
   origemTipo: "vereador", autorVereadorId: "", autorExterno: "",
   dataEntrada: new Date().toISOString().slice(0, 10),
   dispensaParecer: false, dispensaIntersticio: false, regimeUrgencia: false,
-  numVotacoes: 1, status: "em_tramitacao",
+  numVotacoes: 1, status: "em_tramitacao", destinoFinal: "sancao",
   comissoes: [] as { comissaoId: string; ordem: number; parecerConjunto: boolean }[],
 };
 
@@ -68,7 +69,10 @@ function buildEtapas(p: Proposicao): Etapa[] {
   if (p.dispensaIntersticio) etapas.push({ key: "disp_intersticio", label: "Disp. Interstício" });
   etapas.push({ key: "primeira_votacao", label: "1ª Votação" });
   if (p.numVotacoes >= 2) etapas.push({ key: "segunda_votacao", label: "2ª Votação" });
-  etapas.push({ key: "aguardando_sancao", label: "Ag. Sanção" });
+  etapas.push({
+    key: "aguardando_sancao",
+    label: p.destinoFinal === "promulgacao" ? "Promulgar" : "Ag. Sanção",
+  });
   return etapas;
 }
 
@@ -172,6 +176,7 @@ export default function ProposicoesPage() {
       regimeUrgencia: p.regimeUrgencia,
       numVotacoes: p.numVotacoes,
       status: p.status,
+      destinoFinal: p.destinoFinal || "sancao",
       comissoes: p.comissoes.map(c => ({ comissaoId: c.comissao.id, ordem: c.ordem, parecerConjunto: c.parecerConjunto })),
     });
     setEditId(p.id);
@@ -428,7 +433,13 @@ export default function ProposicoesPage() {
                 </p>
               </div>
               <div className="flex gap-1.5 flex-shrink-0 items-center">
-                {p.etapaAtual === "aguardando_sancao" && (
+                {p.etapaAtual === "aguardando_sancao" && p.destinoFinal === "promulgacao" && (
+                  <button onClick={() => sancionar(p.id, false)}
+                    className="px-3 py-1 rounded-lg text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 transition">
+                    Promulgar
+                  </button>
+                )}
+                {p.etapaAtual === "aguardando_sancao" && p.destinoFinal !== "promulgacao" && (
                   <>
                     <button onClick={() => sancionar(p.id, false)}
                       className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition">
@@ -536,7 +547,7 @@ export default function ProposicoesPage() {
                   <p className="text-gray-800">{new Date(verProp.dataEntrada).toLocaleDateString("pt-BR")}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500 font-medium mb-1">Votações</p>
                   <p className="text-gray-800">{verProp.numVotacoes === 1 ? "1 votação" : "2 votações"}</p>
@@ -544,6 +555,13 @@ export default function ProposicoesPage() {
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500 font-medium mb-1">Regime</p>
                   <p className="text-gray-800">{verProp.regimeUrgencia ? "Urgência" : "Normal"}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 font-medium mb-1">Após aprovação</p>
+                  <p className="text-gray-800 font-semibold"
+                    style={{ color: verProp.destinoFinal === "promulgacao" ? "#7c3aed" : "#16a34a" }}>
+                    {verProp.destinoFinal === "promulgacao" ? "Promulgar" : "Sancionar"}
+                  </p>
                 </div>
               </div>
               {verProp.comissoes.length > 0 && (
@@ -654,6 +672,26 @@ export default function ProposicoesPage() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Após aprovação</label>
+                <div className="flex gap-2 pt-1">
+                  {[
+                    { value: "sancao", label: "Sancionar", desc: "Encaminha ao Prefeito", color: "#16a34a" },
+                    { value: "promulgacao", label: "Promulgar", desc: "Câmara promulga", color: "#7c3aed" },
+                  ].map(opt => (
+                    <button key={opt.value} type="button"
+                      onClick={() => setForm({ ...form, destinoFinal: opt.value })}
+                      className="flex-1 flex flex-col items-center py-2 px-3 rounded-xl border-2 transition text-left"
+                      style={form.destinoFinal === opt.value
+                        ? { borderColor: opt.color, background: opt.color + "10" }
+                        : { borderColor: "#e5e7eb", background: "#fff" }}>
+                      <span className="text-sm font-semibold" style={{ color: form.destinoFinal === opt.value ? opt.color : "#374151" }}>{opt.label}</span>
+                      <span className="text-xs text-gray-400">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Número de Votações</label>
                 <div className="flex gap-3 pt-1">
                   {[1, 2].map(n => (
@@ -731,7 +769,7 @@ export default function ProposicoesPage() {
                     { show: form.dispensaIntersticio, label: "Disp. Interstício" },
                     { show: true, label: "1ª Votação" },
                     { show: form.numVotacoes >= 2, label: "2ª Votação" },
-                    { show: true, label: "Ag. Sanção" },
+                    { show: true, label: form.destinoFinal === "promulgacao" ? "Promulgar" : "Ag. Sanção" },
                   ].filter((e): e is { show: boolean; label: string } => e !== null && e.show).map((e, i, arr) => (
                     <div key={i} className="flex items-center gap-1">
                       <div className="flex flex-col items-center gap-0.5">
