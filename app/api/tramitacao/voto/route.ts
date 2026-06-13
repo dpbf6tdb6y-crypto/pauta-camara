@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   const votos = await prisma.votoParecerVereador.findMany({
     where: { proposicaoComissaoId },
   });
-  const aprovados = votos.filter((v) => v.aprovado).length;
+  const aprovados = votos.filter((v: { aprovado: boolean }) => v.aprovado).length;
 
   if (aprovados >= 2) {
     await prisma.proposicaoComissao.update({
