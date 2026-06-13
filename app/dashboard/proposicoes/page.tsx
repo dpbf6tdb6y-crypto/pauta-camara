@@ -600,9 +600,9 @@ export default function ProposicoesPage() {
       {/* Modal cadastrar / editar */}
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
             <h2 className="font-bold text-lg text-gray-800 mb-4">{editId ? "Editar" : "Nova"} Proposição</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
@@ -611,18 +611,16 @@ export default function ProposicoesPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
-                  <input value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ano</label>
-                  <input type="number" value={form.ano} onChange={(e) => setForm({ ...form, ano: +e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
+                <input value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ano</label>
+                <input type="number" value={form.ano} onChange={(e) => setForm({ ...form, ano: +e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
 
-              <div className="col-span-2">
+              <div className="col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Ementa</label>
                 <textarea value={form.ementa} onChange={(e) => setForm({ ...form, ementa: e.target.value })} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
@@ -703,7 +701,7 @@ export default function ProposicoesPage() {
                 </div>
               </div>
 
-              <div className="col-span-2">
+              <div className="col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Etapas do fluxo</label>
                 <div className="grid grid-cols-3 gap-2">
                   <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -722,7 +720,7 @@ export default function ProposicoesPage() {
               </div>
 
               {!form.dispensaParecer && (
-                <div className="col-span-2">
+                <div className="col-span-3">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-gray-700">Comissões (até 5)</label>
                     {form.comissoes.length < 5 && (
