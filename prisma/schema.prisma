@@ -85,9 +85,12 @@ model Proposicao {
   autorExterno    String?
   dataEntrada     DateTime
   status          String   @default("em_tramitacao")
-  dispensaParecer Boolean  @default(false)
-  regimeUrgencia  Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  dispensaParecer     Boolean  @default(false)
+  dispensaIntersticio Boolean  @default(false)
+  regimeUrgencia      Boolean  @default(false)
+  numVotacoes         Int      @default(1)
+  etapaAtual          String   @default("protocolado")
+  createdAt           DateTime @default(now())
 
   autorVereador Vereador?           @relation("AutorVereador", fields: [autorVereadorId], references: [id])
   comissoes     ProposicaoComissao[]
