@@ -99,8 +99,6 @@ export default function ProposicoesPage() {
   const [verProp, setVerProp] = useState<Proposicao | null>(null);
 
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
-  const [modalPauta, setModalPauta] = useState(false);
-  const [sessaoId, setSessaoId] = useState("");
   const [enviando, setEnviando] = useState(false);
 
   const [filtroTipo, setFiltroTipo] = useState("");
@@ -202,19 +200,27 @@ export default function ProposicoesPage() {
     });
   }
 
+  const proximaSessao = sessoes.length > 0
+    ? sessoes.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())[0]
+    : null;
+
+  function formatarDataSessao(data: string) {
+    const d = new Date(data);
+    const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+    return `${d.getUTCDate()} de ${meses[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+  }
+
   async function enviarParaPauta() {
-    if (!sessaoId) return;
+    if (!proximaSessao) return;
     setEnviando(true);
     const res = await fetch("/api/pauta", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessaoId, proposicaoIds: Array.from(selecionadas) }),
+      body: JSON.stringify({ sessaoId: proximaSessao.id, proposicaoIds: Array.from(selecionadas) }),
     });
     const result = await res.json();
     setEnviando(false);
-    setModalPauta(false);
     setSelecionadas(new Set());
-    setSessaoId("");
     carregar();
     if (result.duplicadas > 0) alert(`${result.adicionadas} adicionada(s). ${result.duplicadas} já estavam na pauta.`);
   }
@@ -242,16 +248,24 @@ export default function ProposicoesPage() {
         {/* Botão central Enviar para Pauta */}
         <div className="flex-1 flex justify-center">
           {selecionadas.size > 0 && (
-            <button
-              onClick={() => { setSessaoId(""); setModalPauta(true); }}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white shadow-md transition"
-              style={{ background: "#8B0000" }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              Enviar para Pauta ({selecionadas.size})
-            </button>
+            proximaSessao ? (
+              <button
+                onClick={enviarParaPauta}
+                disabled={enviando}
+                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white shadow-md transition disabled:opacity-60"
+                style={{ background: "#8B0000" }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                {enviando ? "Enviando..." : `Enviar para pauta de ${formatarDataSessao(proximaSessao.data)}`}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-amber-700 bg-amber-50 border border-amber-200">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                Nenhuma sessão agendada. Cadastre em Sessões & Pautas.
+              </div>
+            )
           )}
         </div>
 
@@ -330,58 +344,6 @@ export default function ProposicoesPage() {
           </div>
         ))}
       </div>
-
-      {/* Modal Enviar para Pauta */}
-      {modalPauta && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-            <h2 className="font-bold text-lg text-gray-800 mb-1">Enviar para Pauta</h2>
-            <p className="text-sm text-gray-500 mb-4">{selecionadas.size} proposição(ões) selecionada(s)</p>
-
-            {sessoes.length === 0 ? (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-                Nenhuma sessão agendada encontrada. Cadastre uma sessão primeiro em <strong>Sessões & Pautas</strong>.
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Selecione a Sessão</label>
-                <select
-                  value={sessaoId}
-                  onChange={(e) => setSessaoId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                  style={{ focusRingColor: "#8B0000" } as any}
-                >
-                  <option value="">Selecione...</option>
-                  {sessoes.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {new Date(s.data).toLocaleDateString("pt-BR")} — {s.tipo.charAt(0).toUpperCase() + s.tipo.slice(1)}{s.numero ? ` nº ${s.numero}` : ""}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-400 mt-2">
-                  As proposições passarão automaticamente para a etapa <strong>Pautado</strong> e permanecerão em tramitação até o resultado da votação.
-                </p>
-              </div>
-            )}
-
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setModalPauta(false)} className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50">
-                Cancelar
-              </button>
-              {sessoes.length > 0 && (
-                <button
-                  onClick={enviarParaPauta}
-                  disabled={!sessaoId || enviando}
-                  className="flex-1 text-white rounded-lg py-2 text-sm font-medium transition disabled:opacity-50"
-                  style={{ background: "#8B0000" }}
-                >
-                  {enviando ? "Enviando..." : "Confirmar"}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal visualizar */}
       {verProp && (

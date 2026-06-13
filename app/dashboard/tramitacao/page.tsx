@@ -12,7 +12,7 @@ type Tramitacao = {
 };
 type Proposicao = {
   id: string; numero: string; ano: number; tipo: string; ementa: string; status: string;
-  dispensaParecer: boolean;
+  dispensaParecer: boolean; etapaAtual: string;
   comissoes: Tramitacao[];
 };
 
@@ -29,10 +29,12 @@ export default function TramitacaoPage() {
   const [modalParecer, setModalParecer] = useState<{ tramitacaoId: string; analistaId: string } | null>(null);
   const [parecerForm, setParecerForm] = useState({ parecer: "favoravel", parecerTexto: "" });
 
+  const etapasComissao = ["comissao1","comissao2","comissao3","comissao4","comissao5"];
+
   async function carregar() {
     const res = await fetch("/api/proposicoes?status=em_tramitacao");
     const data = await res.json();
-    setLista(data.filter((p: Proposicao) => !p.dispensaParecer));
+    setLista(data.filter((p: Proposicao) => etapasComissao.includes(p.etapaAtual)));
   }
 
   async function carregarDetalhe(id: string) {
