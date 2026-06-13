@@ -25,36 +25,66 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [status, router]);
 
   if (status === "loading") {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-gray-500">Carregando...</div></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-gray-500 text-sm">Carregando...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-blue-900 text-white flex flex-col transition-all duration-300 flex-shrink-0`}>
-        <div className="flex items-center justify-between p-4 border-b border-blue-800">
+      <aside className={`${sidebarOpen ? "w-64" : "w-16"} flex flex-col transition-all duration-300 flex-shrink-0 shadow-lg`}
+        style={{ background: "linear-gradient(180deg, #6B0000 0%, #8B0000 40%, #a93226 100%)" }}>
+
+        {/* Header da sidebar */}
+        <div className="flex items-center justify-between p-4 border-b border-red-900">
           {sidebarOpen && (
-            <div>
-              <p className="font-bold text-sm">Câmara Municipal</p>
-              <p className="text-blue-300 text-xs">Gestão de Pautas</p>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow"
+                style={{ background: "#d4a017" }}>
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold text-white text-xs leading-tight">Câmara Municipal</p>
+                <p className="text-xs leading-tight" style={{ color: "#f0c040" }}>Nova Lima — MG</p>
+              </div>
             </div>
           )}
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded hover:bg-blue-800">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {!sidebarOpen && (
+            <div className="w-8 h-8 rounded-full flex items-center justify-center mx-auto"
+              style={{ background: "#d4a017" }}>
+              <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16" />
+              </svg>
+            </div>
+          )}
+          <button onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1.5 rounded-lg text-red-200 hover:bg-red-900 hover:text-white transition ml-auto">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+        {/* Navegação */}
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto mt-2">
           {navItems.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${active ? "bg-blue-700 text-white" : "text-blue-200 hover:bg-blue-800 hover:text-white"}`}
-              >
+              <Link key={item.href} href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                  active
+                    ? "text-white font-semibold shadow-sm"
+                    : "text-red-200 hover:text-white hover:bg-red-900"
+                }`}
+                style={active ? { background: "#d4a017" } : {}}>
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                 </svg>
@@ -64,14 +94,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        <div className="p-3 border-t border-blue-800">
+        {/* Footer da sidebar */}
+        <div className="p-3 border-t border-red-900">
           {sidebarOpen && (
-            <p className="text-blue-300 text-xs mb-2 truncate">{session?.user?.name}</p>
+            <p className="text-red-300 text-xs mb-2 truncate">{session?.user?.name}</p>
           )}
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-2 text-blue-300 hover:text-white text-xs transition w-full"
-          >
+          <button onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex items-center gap-2 text-red-300 hover:text-white text-xs transition w-full px-1">
             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
@@ -80,8 +109,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">{children}</main>
+      {/* Conteúdo principal */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Topbar */}
+        <header className="bg-white shadow-sm px-6 py-3 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700">Sistema de Gestão de Pautas</h2>
+            <p className="text-xs text-gray-400">Câmara Municipal de Nova Lima — MG</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+              style={{ background: "#c0392b" }}>
+              {session?.user?.name?.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-sm text-gray-600 hidden sm:block">{session?.user?.name}</span>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-auto p-6">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
