@@ -44,6 +44,8 @@ function buildEtapas(p: Proposicao): Etapa[] {
   if (p.comissoes.length >= 1) etapas.push({ key: "comissao1", label: p.comissoes[0]?.comissao?.sigla || "Comissão 1" });
   if (p.comissoes.length >= 2) etapas.push({ key: "comissao2", label: p.comissoes[1]?.comissao?.sigla || "Comissão 2" });
   if (p.comissoes.length >= 3) etapas.push({ key: "comissao3", label: p.comissoes[2]?.comissao?.sigla || "Comissão 3" });
+  if (p.comissoes.length >= 4) etapas.push({ key: "comissao4", label: p.comissoes[3]?.comissao?.sigla || "Comissão 4" });
+  if (p.comissoes.length >= 5) etapas.push({ key: "comissao5", label: p.comissoes[4]?.comissao?.sigla || "Comissão 5" });
   if (p.dispensaParecer) etapas.push({ key: "disp_parecer", label: "Disp. Parecer" });
   if (p.dispensaIntersticio) etapas.push({ key: "disp_intersticio", label: "Disp. Interstício" });
   etapas.push({ key: "primeira_votacao", label: "1ª Votação" });
@@ -157,7 +159,7 @@ export default function ProposicoesPage() {
   }
 
   function addComissao() {
-    if (form.comissoes.length < 3)
+    if (form.comissoes.length < 5)
       setForm({ ...form, comissoes: [...form.comissoes, { comissaoId: "", ordem: form.comissoes.length + 1 }] });
   }
 
@@ -167,7 +169,12 @@ export default function ProposicoesPage() {
   }
 
   async function salvar() {
-    const payload = { ...form, comissoes: form.comissoes.filter(c => c.comissaoId) };
+    const payload = {
+      ...form,
+      autorVereadorId: form.origemTipo === "vereador" && form.autorVereadorId ? form.autorVereadorId : null,
+      autorExterno: form.origemTipo === "executivo" ? form.autorExterno : null,
+      comissoes: form.comissoes.filter(c => c.comissaoId),
+    };
     if (editId) {
       await fetch(`/api/proposicoes/${editId}`, {
         method: "PUT",
@@ -547,8 +554,8 @@ export default function ProposicoesPage() {
               {!form.dispensaParecer && (
                 <div className="col-span-2">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-gray-700">Comissões (até 3)</label>
-                    {form.comissoes.length < 3 && (
+                    <label className="text-sm font-medium text-gray-700">Comissões (até 5)</label>
+                    {form.comissoes.length < 5 && (
                       <button onClick={addComissao} className="text-blue-600 text-xs hover:underline">+ Adicionar</button>
                     )}
                   </div>
@@ -576,6 +583,8 @@ export default function ProposicoesPage() {
                     { show: form.comissoes.length >= 1, label: comissoes.find(c => c.id === form.comissoes[0]?.comissaoId)?.sigla || "Comissão 1" },
                     { show: form.comissoes.length >= 2, label: comissoes.find(c => c.id === form.comissoes[1]?.comissaoId)?.sigla || "Comissão 2" },
                     { show: form.comissoes.length >= 3, label: comissoes.find(c => c.id === form.comissoes[2]?.comissaoId)?.sigla || "Comissão 3" },
+                    { show: form.comissoes.length >= 4, label: comissoes.find(c => c.id === form.comissoes[3]?.comissaoId)?.sigla || "Comissão 4" },
+                    { show: form.comissoes.length >= 5, label: comissoes.find(c => c.id === form.comissoes[4]?.comissaoId)?.sigla || "Comissão 5" },
                     { show: form.dispensaParecer, label: "Disp. Parecer" },
                     { show: form.dispensaIntersticio, label: "Disp. Interstício" },
                     { show: true, label: "1ª Votação" },
