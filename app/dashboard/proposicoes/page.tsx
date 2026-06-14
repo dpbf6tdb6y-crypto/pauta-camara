@@ -51,7 +51,14 @@ const emptyForm = {
   comissoes: [] as { comissaoId: string; ordem: number; parecerConjunto: boolean }[],
 };
 
-type Etapa = { key: string; label: string; grupo?: boolean };
+const STEP_W = 56;
+const CONN_W = 8;
+
+function isComissaoCRF(c: ComissaoItem) {
+  return c.comissao.sigla === "CRF" || c.comissao.nome.toLowerCase().includes("redação final") || c.comissao.nome.toLowerCase().includes("redacao final");
+}
+
+type Etapa = { key: string; label: string; parecerConjunto?: boolean; isCRF?: boolean };
 
 function buildEtapas(p: Proposicao): Etapa[] {
   const etapas: Etapa[] = [
@@ -59,29 +66,27 @@ function buildEtapas(p: Proposicao): Etapa[] {
     { key: "pautado", label: "Pautado" },
   ];
 
-  const sequenciais = p.comissoes.filter(c => !c.parecerConjunto);
-  const conjuntos = p.comissoes.filter(c => c.parecerConjunto);
+  const regulares = p.comissoes.filter(c => !isComissaoCRF(c));
+  const crf = p.comissoes.find(c => isComissaoCRF(c));
 
-  sequenciais.forEach((c, i) => {
-    etapas.push({ key: `comissao${c.ordem}`, label: c.comissao?.sigla || `Com. ${i + 1}` });
+  regulares.forEach((c, i) => {
+    etapas.push({ key: `comissao${c.ordem}`, label: c.comissao?.sigla || `Com. ${i + 1}`, parecerConjunto: c.parecerConjunto });
   });
 
-  if (conjuntos.length > 0) {
-    const siglas = conjuntos.map(c => c.comissao?.sigla || "Com.").join("+");
-    etapas.push({ key: "parecer_conjunto", label: siglas, grupo: true });
-  }
-
-  if (p.dispensaParecer) etapas.push({ key: "disp_parecer", label: "Disp. Parecer" });
-  if (p.dispensaIntersticio) etapas.push({ key: "disp_intersticio", label: "Disp. Interstício" });
-  if (p.comissoes.length > 0 && !p.dispensaParecer) {
+  if (regulares.length > 0 && !p.dispensaParecer) {
     etapas.push({ key: "pronto_votar", label: "Ag. Pautar" });
   }
-  if (p.dispensaParecer) etapas.push({ key: "disp_parecer", label: "Disp. Parecer" });
-  if (p.dispensaIntersticio) etapas.push({ key: "disp_intersticio", label: "Disp. Interstício" });
+
   etapas.push({ key: "primeira_votacao", label: "1ª Votação" });
   if (p.numVotacoes >= 2) etapas.push({ key: "segunda_votacao", label: "2ª Votação" });
+
+  // CRF vem após as votações
+  if (crf) {
+    etapas.push({ key: `comissao${crf.ordem}`, label: crf.comissao?.sigla || "CRF", isCRF: true });
+  }
+
   etapas.push({
-    key: "aguardando_sancao",
+    key: p.destinoFinal === "promulgacao" ? "promulgada" : "aguardando_sancao",
     label: p.destinoFinal === "promulgacao" ? "Promulgar" : "Ag. Sanção",
   });
   return etapas;
@@ -94,32 +99,75 @@ function autoSecao(p: Proposicao): string {
   return "votacao";
 }
 
+function gruposConjuntoEtapas(etapas: Etapa[]): { start: number; end: number }[] {
+  const groups: { start: number; end: number }[] = [];
+  let start = -1;
+  etapas.forEach((e, i) => {
+    if (e.parecerConjunto) {
+      if (start === -1) start = i;
+    } else {
+      if (start !== -1) { groups.push({ start, end: i - 1 }); start = -1; }
+    }
+  });
+  if (start !== -1) groups.push({ start, end: etapas.length - 1 });
+  return groups;
+}
+
 function Stepper({ p }: { p: Proposicao }) {
   const etapas = buildEtapas(p);
   const idx = etapas.findIndex(e => e.key === p.etapaAtual);
+  const grupos = gruposConjuntoEtapas(etapas);
+  const temConjunto = grupos.length > 0;
+
   return (
-    <div className="flex items-end gap-2 flex-wrap mt-4 pt-4 border-t border-gray-100">
-      {etapas.map((e, i) => {
-        const concluida = i < idx;
-        const atual = i === idx;
-        return (
-          <div key={e.key} className="flex flex-col items-center gap-1" style={{ minWidth: e.grupo ? 70 : 56 }}>
-            <div className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold"
-              style={{
-                background: concluida ? "#8B0000" : atual ? "#d4a017" : "#e5e7eb",
-                color: concluida || atual ? "#fff" : "#9ca3af",
-                boxShadow: atual ? "0 0 0 3px #d4a01740" : "none",
-                outline: e.grupo ? "2px dashed #6b7280" : "none",
-              }}>
-              {concluida ? "✓" : e.grupo ? "⊕" : i + 1}
+    <div className="mt-4 pt-4 border-t border-gray-100 overflow-x-auto">
+      <div className="relative inline-flex flex-col" style={{ paddingTop: temConjunto ? 26 : 0 }}>
+
+        {/* Brackets de parecer conjunto */}
+        {grupos.map((g, gi) => {
+          const left = g.start * (STEP_W + CONN_W);
+          const width = (g.end - g.start) * (STEP_W + CONN_W) + STEP_W;
+          return (
+            <div key={gi} style={{ position: "absolute", top: 0, left, width, height: 24 }}>
+              <span style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", fontSize: 8, fontWeight: 700, color: "#4338ca", whiteSpace: "nowrap" }}>
+                Parecer Conjunto
+              </span>
+              <div style={{ position: "absolute", bottom: 4, left: 4, right: 4, height: 2, background: "#4338ca", borderRadius: 1 }} />
+              <div style={{ position: "absolute", bottom: 4, left: 4, width: 2, height: 7, background: "#4338ca", borderRadius: 1 }} />
+              <div style={{ position: "absolute", bottom: 4, right: 4, width: 2, height: 7, background: "#4338ca", borderRadius: 1 }} />
             </div>
-            <span className="text-center leading-tight"
-              style={{ fontSize: 9, color: concluida ? "#8B0000" : atual ? "#92400e" : "#9ca3af", fontWeight: atual ? 600 : 400, maxWidth: 70 }}>
-              {e.label}
-            </span>
-          </div>
-        );
-      })}
+          );
+        })}
+
+        <div className="flex items-end">
+          {etapas.map((e, i) => {
+            const concluida = i < idx;
+            const atual = i === idx;
+            return (
+              <div key={e.key} className="flex items-end">
+                <div className="flex flex-col items-center gap-1" style={{ minWidth: STEP_W }}>
+                  <div className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold"
+                    style={{
+                      background: concluida ? "#8B0000" : atual ? "#d4a017" : "#e5e7eb",
+                      color: concluida || atual ? "#fff" : e.parecerConjunto ? "#4338ca" : "#9ca3af",
+                      boxShadow: atual ? "0 0 0 3px #d4a01740" : "none",
+                      outline: e.isCRF ? "2px solid #15803d" : "none",
+                    }}>
+                    {concluida ? "✓" : i + 1}
+                  </div>
+                  <span className="text-center leading-tight"
+                    style={{ fontSize: 9, color: concluida ? "#8B0000" : atual ? "#92400e" : e.parecerConjunto ? "#4338ca" : e.isCRF ? "#15803d" : "#9ca3af", fontWeight: atual ? 600 : 400, maxWidth: STEP_W }}>
+                    {e.label}
+                  </span>
+                </div>
+                {i < etapas.length - 1 && (
+                  <div style={{ width: CONN_W, height: 2, background: i < idx ? "#8B0000" : "#e5e7eb", marginBottom: 18, flexShrink: 0 }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

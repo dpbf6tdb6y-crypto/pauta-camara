@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-type ComissaoInfo = { id: string; ordem: number; status: string; comissao: { sigla: string; nome: string } };
+type ComissaoInfo = { id: string; ordem: number; status: string; parecerConjunto?: boolean; comissao: { sigla: string; nome: string } };
 type Proposicao = {
   id: string; numero: string; ano: number; tipo: string; ementa: string;
   status: string; etapaAtual: string; destinoFinal?: string;
@@ -13,20 +13,37 @@ type Sessao = { id: string; data: string; tipo: string; numero?: number; ano?: n
 
 // ── Mini Stepper ─────────────────────────────────────────────────────────────
 
-function buildSteps(prop: Proposicao): { key: string; label: string }[] {
-  const steps: { key: string; label: string }[] = [
-    { key: "protocolado", label: "Protoc." },
-  ];
+const STEP_W = 44;
+const CONN_W = 14;
+
+function isCRF(c: ComissaoInfo) {
+  return c.comissao.sigla === "CRF" || c.comissao.nome.toLowerCase().includes("redação final") || c.comissao.nome.toLowerCase().includes("redacao final");
+}
+
+type Step = { key: string; label: string; parecerConjunto?: boolean };
+
+function buildSteps(prop: Proposicao): Step[] {
+  const steps: Step[] = [{ key: "protocolado", label: "Protoc." }];
+
   if (!prop.dispensaParecer && prop.comissoes && prop.comissoes.length > 0) {
-    prop.comissoes.forEach(c => {
-      steps.push({ key: `comissao${c.ordem}`, label: c.comissao.sigla });
+    const regulares = prop.comissoes.filter(c => !isCRF(c));
+    const crf = prop.comissoes.find(c => isCRF(c));
+
+    regulares.forEach(c => {
+      steps.push({ key: `comissao${c.ordem}`, label: c.comissao.sigla || c.comissao.nome.slice(0, 3), parecerConjunto: c.parecerConjunto });
     });
-    steps.push({ key: "pronto_votar", label: "Ag. Pautar" });
+    if (regulares.length > 0) steps.push({ key: "pronto_votar", label: "Ag. Pautar" });
+
+    steps.push({ key: "primeira_votacao", label: "1ª Vot." });
+    if ((prop.numVotacoes ?? 1) >= 2) steps.push({ key: "segunda_votacao", label: "2ª Vot." });
+
+    // CRF vem depois das votações
+    if (crf) steps.push({ key: `comissao${crf.ordem}`, label: crf.comissao.sigla || "CRF" });
+  } else {
+    steps.push({ key: "primeira_votacao", label: "1ª Vot." });
+    if ((prop.numVotacoes ?? 1) >= 2) steps.push({ key: "segunda_votacao", label: "2ª Vot." });
   }
-  steps.push({ key: "primeira_votacao", label: "1ª Vot." });
-  if ((prop.numVotacoes ?? 1) >= 2) {
-    steps.push({ key: "segunda_votacao", label: "2ª Vot." });
-  }
+
   steps.push({
     key: prop.destinoFinal === "promulgacao" ? "promulgada" : "aguardando_sancao",
     label: prop.destinoFinal === "promulgacao" ? "Promulgar" : "Ag. Sanção",
@@ -34,63 +51,105 @@ function buildSteps(prop: Proposicao): { key: string; label: string }[] {
   return steps;
 }
 
-function getCurrentIndex(etapaAtual: string, steps: { key: string }[]): number {
+function getCurrentIndex(etapaAtual: string, steps: Step[]): number {
   const idx = steps.findIndex(s => s.key === etapaAtual);
   return idx >= 0 ? idx : 0;
+}
+
+// Agrupa índices consecutivos de parecer conjunto
+function gruposConjunto(steps: Step[]): { start: number; end: number }[] {
+  const groups: { start: number; end: number }[] = [];
+  let start = -1;
+  steps.forEach((s, i) => {
+    if (s.parecerConjunto) {
+      if (start === -1) start = i;
+    } else {
+      if (start !== -1) { groups.push({ start, end: i - 1 }); start = -1; }
+    }
+  });
+  if (start !== -1) groups.push({ start, end: steps.length - 1 });
+  return groups;
 }
 
 function MiniStepper({ prop }: { prop: Proposicao }) {
   const steps = buildSteps(prop);
   const current = getCurrentIndex(prop.etapaAtual, steps);
+  const grupos = gruposConjunto(steps);
+  const temConjunto = grupos.length > 0;
 
   return (
-    <div className="flex items-center gap-0 overflow-x-auto py-1">
-      {steps.map((step, i) => {
-        const done = i < current;
-        const active = i === current;
-        return (
-          <div key={step.key} className="flex items-center">
-            <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0"
-                style={
-                  done
-                    ? { background: "#8B0000", borderColor: "#8B0000", color: "#fff" }
-                    : active
-                    ? { background: "#d4a017", borderColor: "#d4a017", color: "#fff" }
-                    : { background: "#f3f4f6", borderColor: "#d1d5db", color: "#9ca3af" }
-                }
-              >
-                {done ? (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <span>{i + 1}</span>
+    <div className="overflow-x-auto py-1">
+      <div className="relative inline-flex flex-col" style={{ paddingTop: temConjunto ? 26 : 0 }}>
+
+        {/* Brackets de parecer conjunto */}
+        {grupos.map((g, gi) => {
+          const left = g.start * (STEP_W + CONN_W);
+          const width = (g.end - g.start) * (STEP_W + CONN_W) + STEP_W;
+          return (
+            <div key={gi} style={{ position: "absolute", top: 0, left, width, height: 24 }}>
+              <span style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", fontSize: 8, fontWeight: 700, color: "#4338ca", whiteSpace: "nowrap" }}>
+                Parecer Conjunto
+              </span>
+              {/* linha horizontal */}
+              <div style={{ position: "absolute", bottom: 4, left: 4, right: 4, height: 2, background: "#4338ca", borderRadius: 1 }} />
+              {/* tick esquerdo */}
+              <div style={{ position: "absolute", bottom: 4, left: 4, width: 2, height: 7, background: "#4338ca", borderRadius: 1 }} />
+              {/* tick direito */}
+              <div style={{ position: "absolute", bottom: 4, right: 4, width: 2, height: 7, background: "#4338ca", borderRadius: 1 }} />
+            </div>
+          );
+        })}
+
+        {/* Linha de bolhas */}
+        <div className="flex items-center">
+          {steps.map((step, i) => {
+            const done = i < current;
+            const active = i === current;
+            return (
+              <div key={step.key} className="flex items-center">
+                <div className="flex flex-col items-center" style={{ minWidth: STEP_W }}>
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0"
+                    style={
+                      done
+                        ? { background: "#8B0000", borderColor: "#8B0000", color: "#fff" }
+                        : active
+                        ? { background: "#d4a017", borderColor: "#d4a017", color: "#fff" }
+                        : { background: "#f3f4f6", borderColor: "#d1d5db", color: "#9ca3af" }
+                    }
+                  >
+                    {done ? (
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <span>{i + 1}</span>
+                    )}
+                  </div>
+                  <span
+                    className="text-center mt-0.5 leading-tight"
+                    style={{
+                      fontSize: 9,
+                      maxWidth: STEP_W,
+                      color: done ? "#8B0000" : active ? "#b5860f" : step.parecerConjunto ? "#4338ca" : "#9ca3af",
+                      fontWeight: active ? 700 : 400,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+                {i < steps.length - 1 && (
+                  <div
+                    className="h-0.5 flex-shrink-0"
+                    style={{ width: CONN_W, background: i < current ? "#8B0000" : "#e5e7eb", marginBottom: 14 }}
+                  />
                 )}
               </div>
-              <span
-                className="text-center mt-0.5 leading-tight"
-                style={{
-                  fontSize: 9,
-                  maxWidth: 44,
-                  color: done ? "#8B0000" : active ? "#b5860f" : "#9ca3af",
-                  fontWeight: active ? 700 : 400,
-                  wordBreak: "break-word",
-                }}
-              >
-                {step.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div
-                className="h-0.5 flex-shrink-0"
-                style={{ width: 14, background: i < current ? "#8B0000" : "#e5e7eb", marginBottom: 14 }}
-              />
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
