@@ -148,7 +148,7 @@ function Stepper({ p }: { p: Proposicao }) {
                 <div className="flex flex-col items-center gap-1" style={{ minWidth: STEP_W }}>
                   <div className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold"
                     style={{
-                      background: concluida ? "#8B0000" : atual ? "#d4a017" : "#e5e7eb",
+                      background: concluida ? "#16a34a" : atual ? "#d4a017" : "#e5e7eb",
                       color: concluida || atual ? "#fff" : e.parecerConjunto ? "#4338ca" : "#9ca3af",
                       boxShadow: atual ? "0 0 0 3px #d4a01740" : "none",
                       outline: e.isCRF ? "2px solid #15803d" : "none",
@@ -156,12 +156,12 @@ function Stepper({ p }: { p: Proposicao }) {
                     {concluida ? "✓" : i + 1}
                   </div>
                   <span className="text-center leading-tight"
-                    style={{ fontSize: 9, color: concluida ? "#8B0000" : atual ? "#92400e" : e.parecerConjunto ? "#4338ca" : e.isCRF ? "#15803d" : "#9ca3af", fontWeight: atual ? 600 : 400, maxWidth: STEP_W }}>
+                    style={{ fontSize: 9, color: concluida ? "#16a34a" : atual ? "#92400e" : e.parecerConjunto ? "#4338ca" : e.isCRF ? "#15803d" : "#9ca3af", fontWeight: atual ? 600 : 400, maxWidth: STEP_W }}>
                     {e.label}
                   </span>
                 </div>
                 {i < etapas.length - 1 && (
-                  <div style={{ width: CONN_W, height: 2, background: i < idx ? "#8B0000" : "#e5e7eb", marginBottom: 18, flexShrink: 0 }} />
+                  <div style={{ width: CONN_W, height: 2, background: i < idx ? "#16a34a" : "#e5e7eb", marginBottom: 18, flexShrink: 0 }} />
                 )}
               </div>
             );

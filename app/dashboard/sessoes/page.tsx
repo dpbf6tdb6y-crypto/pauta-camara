@@ -112,7 +112,7 @@ function MiniStepper({ prop }: { prop: Proposicao }) {
                     className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0"
                     style={
                       done
-                        ? { background: "#8B0000", borderColor: "#8B0000", color: "#fff" }
+                        ? { background: "#16a34a", borderColor: "#16a34a", color: "#fff" }
                         : active
                         ? { background: "#d4a017", borderColor: "#d4a017", color: "#fff" }
                         : { background: "#f3f4f6", borderColor: "#d1d5db", color: "#9ca3af" }
@@ -131,7 +131,7 @@ function MiniStepper({ prop }: { prop: Proposicao }) {
                     style={{
                       fontSize: 9,
                       maxWidth: STEP_W,
-                      color: done ? "#8B0000" : active ? "#b5860f" : step.parecerConjunto ? "#4338ca" : "#9ca3af",
+                      color: done ? "#16a34a" : active ? "#b5860f" : step.parecerConjunto ? "#4338ca" : "#9ca3af",
                       fontWeight: active ? 700 : 400,
                       wordBreak: "break-word",
                     }}
@@ -142,7 +142,7 @@ function MiniStepper({ prop }: { prop: Proposicao }) {
                 {i < steps.length - 1 && (
                   <div
                     className="h-0.5 flex-shrink-0"
-                    style={{ width: CONN_W, background: i < current ? "#8B0000" : "#e5e7eb", marginBottom: 14 }}
+                    style={{ width: CONN_W, background: i < current ? "#16a34a" : "#e5e7eb", marginBottom: 14 }}
                   />
                 )}
               </div>
