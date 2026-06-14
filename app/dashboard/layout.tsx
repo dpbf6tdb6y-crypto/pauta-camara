@@ -167,18 +167,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="bg-white shadow-sm px-6 py-3 flex items-center justify-between flex-shrink-0">
+        {/* Topbar — fixo no topo */}
+        <header className="bg-white shadow-sm px-6 py-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-40">
           <div>
             <h2 className="text-sm font-semibold text-gray-700">Sistema de Gestão de Pautas</h2>
             <p className="text-xs text-gray-400">Câmara Municipal de Nova Lima — MG</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ background: "#c0392b" }}>
-              {session?.user?.name?.charAt(0).toUpperCase()}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              title="Atualizar sistema"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Atualizar
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                style={{ background: "#c0392b" }}>
+                {session?.user?.name?.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm text-gray-600 hidden sm:block">{session?.user?.name}</span>
             </div>
-            <span className="text-sm text-gray-600 hidden sm:block">{session?.user?.name}</span>
           </div>
         </header>
 
