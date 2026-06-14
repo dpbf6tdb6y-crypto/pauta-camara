@@ -1,24 +1,108 @@
 "use client";
 import { useEffect, useState } from "react";
 
-type Proposicao = { id: string; numero: string; ano: number; tipo: string; ementa: string; status: string; etapaAtual: string; destinoFinal?: string };
+type ComissaoInfo = { id: string; ordem: number; status: string; comissao: { sigla: string; nome: string } };
+type Proposicao = {
+  id: string; numero: string; ano: number; tipo: string; ementa: string;
+  status: string; etapaAtual: string; destinoFinal?: string;
+  numVotacoes?: number; dispensaParecer?: boolean;
+  comissoes?: ComissaoInfo[];
+};
 type PautaItem = { id: string; proposicao: Proposicao; ordem: number; secao: string; resultado?: string };
 type Sessao = { id: string; data: string; tipo: string; numero?: number; ano?: number; local?: string; status: string; itens: PautaItem[] };
 
+// ── Mini Stepper ─────────────────────────────────────────────────────────────
+
+function buildSteps(prop: Proposicao): { key: string; label: string }[] {
+  const steps: { key: string; label: string }[] = [
+    { key: "protocolado", label: "Protoc." },
+  ];
+  if (!prop.dispensaParecer && prop.comissoes && prop.comissoes.length > 0) {
+    prop.comissoes.forEach(c => {
+      steps.push({ key: `comissao${c.ordem}`, label: c.comissao.sigla });
+    });
+    steps.push({ key: "pronto_votar", label: "Ag. Pautar" });
+  }
+  steps.push({ key: "primeira_votacao", label: "1ª Vot." });
+  if ((prop.numVotacoes ?? 1) >= 2) {
+    steps.push({ key: "segunda_votacao", label: "2ª Vot." });
+  }
+  steps.push({
+    key: prop.destinoFinal === "promulgacao" ? "promulgada" : "aguardando_sancao",
+    label: prop.destinoFinal === "promulgacao" ? "Promulgar" : "Ag. Sanção",
+  });
+  return steps;
+}
+
+function getCurrentIndex(etapaAtual: string, steps: { key: string }[]): number {
+  const idx = steps.findIndex(s => s.key === etapaAtual);
+  return idx >= 0 ? idx : 0;
+}
+
+function MiniStepper({ prop }: { prop: Proposicao }) {
+  const steps = buildSteps(prop);
+  const current = getCurrentIndex(prop.etapaAtual, steps);
+
+  return (
+    <div className="flex items-center gap-0 overflow-x-auto py-1">
+      {steps.map((step, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <div key={step.key} className="flex items-center">
+            {/* Circle */}
+            <div className="flex flex-col items-center" style={{ minWidth: 44 }}>
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0"
+                style={
+                  done
+                    ? { background: "#8B0000", borderColor: "#8B0000", color: "#fff" }
+                    : active
+                    ? { background: "#d4a017", borderColor: "#d4a017", color: "#fff" }
+                    : { background: "#f3f4f6", borderColor: "#d1d5db", color: "#9ca3af" }
+                }
+              >
+                {done ? (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span>{i + 1}</span>
+                )}
+              </div>
+              <span
+                className="text-center mt-0.5 leading-tight"
+                style={{
+                  fontSize: 9,
+                  maxWidth: 44,
+                  color: done ? "#8B0000" : active ? "#b5860f" : "#9ca3af",
+                  fontWeight: active ? 700 : 400,
+                  wordBreak: "break-word",
+                }}
+              >
+                {step.label}
+              </span>
+            </div>
+            {/* Connector */}
+            {i < steps.length - 1 && (
+              <div
+                className="h-0.5 flex-shrink-0"
+                style={{
+                  width: 14,
+                  background: i < current ? "#8B0000" : "#e5e7eb",
+                  marginBottom: 14,
+                }}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const tipoLabel: Record<string, string> = { pl: "PL", resolucao: "Res.", requerimento: "Req.", mocao: "Moção" };
 const tipoSessaoLabel: Record<string, string> = { ordinaria: "Ordinária", extraordinaria: "Extraordinária", especial: "Especial", solene: "Solene" };
-const resultadoOpts = [
-  { value: "aprovado", label: "Aprovado" },
-  { value: "rejeitado", label: "Rejeitado" },
-  { value: "retirado", label: "Retirado" },
-  { value: "adiado", label: "Adiado" },
-];
-const resultadoColor: Record<string, string> = {
-  aprovado: "bg-green-100 text-green-700",
-  rejeitado: "bg-red-100 text-red-700",
-  retirado: "bg-gray-100 text-gray-600",
-  adiado: "bg-yellow-100 text-yellow-700",
-};
 
 const secaoLabel: Record<string, string> = {
   apresentacao: "c) Apresentação de proposições",
@@ -421,64 +505,73 @@ function PautaItemRow({
   onRetirar: () => void;
 }) {
   const resultadoOpts = [
-    { value: "aprovado", label: "Aprovado" },
-    { value: "rejeitado", label: "Rejeitado" },
-    { value: "retirado", label: "Retirado" },
-    { value: "adiado", label: "Adiado" },
+    { value: "aprovado", label: "✓ Aprovado" },
+    { value: "rejeitado", label: "✗ Rejeitado" },
+    { value: "retirado", label: "↩ Retirado" },
+    { value: "adiado", label: "⏸ Adiado" },
   ];
   const resultadoColor: Record<string, string> = {
-    aprovado: "bg-green-100 text-green-700",
-    rejeitado: "bg-red-100 text-red-700",
-    retirado: "bg-gray-100 text-gray-600",
-    adiado: "bg-yellow-100 text-yellow-700",
+    aprovado: "bg-green-100 text-green-700 border-green-300",
+    rejeitado: "bg-red-100 text-red-700 border-red-300",
+    retirado: "bg-gray-100 text-gray-600 border-gray-300",
+    adiado: "bg-yellow-100 text-yellow-700 border-yellow-300",
   };
   const tipoLabel: Record<string, string> = { pl: "PL", resolucao: "Res.", requerimento: "Req.", mocao: "Moção" };
 
   return (
-    <div className="px-5 py-4 flex items-start justify-between gap-4 border-b border-gray-50 last:border-b-0">
-      <div className="flex-1">
-        <p className="text-sm font-medium text-gray-800">
-          {item.ordem}. {tipoLabel[item.proposicao.tipo] || item.proposicao.tipo} {item.proposicao.numero}/{item.proposicao.ano}
-        </p>
-        <p className="text-xs text-gray-500 mt-0.5">{item.proposicao.ementa}</p>
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
-          {item.resultado && (
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${resultadoColor[item.resultado] || "bg-gray-100 text-gray-600"}`}>
-              {resultadoOpts.find(r => r.value === item.resultado)?.label || item.resultado}
-            </span>
+    <div className="px-5 py-4 border-b border-gray-50 last:border-b-0">
+      <div className="flex items-start justify-between gap-4">
+        {/* Info da proposição */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-800">
+            {item.ordem}. {tipoLabel[item.proposicao.tipo] || item.proposicao.tipo} {item.proposicao.numero}/{item.proposicao.ano}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5 truncate">{item.proposicao.ementa}</p>
+        </div>
+
+        {/* Coluna direita: stepper + ações */}
+        <div className="flex-shrink-0 flex flex-col items-end gap-2" style={{ minWidth: 0 }}>
+          {/* Mini stepper */}
+          <MiniStepper prop={item.proposicao} />
+
+          {/* Resultado + Retirar */}
+          {sessaoAberta && (
+            <div className="flex items-center gap-2">
+              {/* Botões de resultado */}
+              {resultadoOpts.map(r => (
+                <button
+                  key={r.value}
+                  onClick={() => onResultado(item.resultado === r.value ? "" : r.value)}
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium border transition ${
+                    item.resultado === r.value
+                      ? resultadoColor[r.value]
+                      : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+              <button
+                onClick={onRetirar}
+                className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 transition whitespace-nowrap"
+                title="Retirar desta pauta"
+              >
+                ↩ Retirar
+              </button>
+            </div>
           )}
+
+          {/* Ação de sanção/promulgação */}
           {item.resultado === "aprovado" && item.proposicao.etapaAtual !== "aguardando_sancao" && item.proposicao.etapaAtual !== "sancionada" && (
             <button
               onClick={onSancao}
-              className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition"
+              className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition border border-purple-200"
             >
               → {item.proposicao.destinoFinal === "promulgacao" ? "Promulgar" : "Encaminhar à Sanção"}
             </button>
           )}
-          {(item.proposicao.etapaAtual === "aguardando_sancao") && (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">
-              {item.proposicao.destinoFinal === "promulgacao" ? "Promulgar" : "Ag. Sanção"}
-            </span>
-          )}
         </div>
       </div>
-      {sessaoAberta && (
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <select
-            value={item.resultado || ""}
-            onChange={(e) => onResultado(e.target.value)}
-            className="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-32"
-          >
-            <option value="">Sem resultado</option>
-            {resultadoOpts.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-          </select>
-          <button onClick={onRetirar}
-            className="px-2 py-1 rounded-lg text-xs font-medium bg-orange-50 text-orange-700 hover:bg-orange-100 transition whitespace-nowrap"
-            title="Retirar desta pauta">
-            Retirar
-          </button>
-        </div>
-      )}
     </div>
   );
 }
