@@ -341,9 +341,12 @@ export default function ParecerPage() {
                         <button
                           onClick={async () => {
                             await salvarVotos();
+                            const sim = Object.values(votosLocais).filter(v => v === true).length;
+                            const nao = Object.values(votosLocais).filter(v => v === false).length;
+                            const parecerAuto = nao > sim ? "contrario" : "favoravel";
                             setModalParecer(comissaoAtiva);
                             setParecerForm({
-                              parecer: "favoravel",
+                              parecer: parecerAuto,
                               parecerTexto: "",
                               analistaId: comissaoAtiva.analista?.id || comissaoAtiva.comissao.analistas?.[0]?.id || "",
                             });
