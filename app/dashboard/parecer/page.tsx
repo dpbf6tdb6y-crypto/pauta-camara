@@ -47,9 +47,10 @@ export default function ParecerPage() {
     const data = await res.json();
     const filtradas = data.filter((p: Proposicao) => etapasComissao.includes(p.etapaAtual));
     setLista(filtradas);
-    if (selecionada) {
-      const atualizada = filtradas.find((p: Proposicao) => p.id === selecionada.id);
-      setSelecionada(atualizada || null);
+    // Não sobrescreve selecionada com dados incompletos da lista (sem votos/analistas)
+    // Apenas nulifica se a proposição saiu das etapas de comissão
+    if (selecionada && !filtradas.find((p: Proposicao) => p.id === selecionada.id)) {
+      setSelecionada(null);
     }
   }
 
@@ -62,6 +63,7 @@ export default function ParecerPage() {
 
   async function registrarParecer() {
     if (!modalParecer) return;
+    const propId = selecionada?.id;
     await fetch("/api/tramitacao/parecer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -74,7 +76,8 @@ export default function ParecerPage() {
     });
     setModalParecer(null);
     await carregar();
-    if (selecionada) carregarDetalhe(selecionada.id);
+    // Recarrega detalhe completo (com votos/analistas) após atualizar a lista
+    if (propId) carregarDetalhe(propId);
   }
 
   async function votar(proposicaoComissaoId: string, vereadorId: string, aprovado: boolean) {
