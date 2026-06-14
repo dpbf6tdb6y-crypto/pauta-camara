@@ -6,12 +6,15 @@ import Link from "next/link";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
-  { href: "/dashboard/vereadores", label: "Vereadores / Executivo", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
-  { href: "/dashboard/comissoes", label: "Comissões", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" },
-  { href: "/dashboard/analistas", label: "Analistas", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
   { href: "/dashboard/proposicoes", label: "Proposições", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
   { href: "/dashboard/parecer", label: "Parecer de Comissão", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
   { href: "/dashboard/sessoes", label: "Sessões & Pautas", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
+];
+
+const configItems = [
+  { href: "/dashboard/vereadores", label: "Vereadores / Executivo", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
+  { href: "/dashboard/comissoes", label: "Comissões", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" },
+  { href: "/dashboard/analistas", label: "Analistas", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -19,10 +22,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [configAberto, setConfigAberto] = useState(
+    configItems.some(i => pathname.startsWith(i.href))
+  );
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
+
+  // Abre o menu de config automaticamente se estiver numa rota de config
+  useEffect(() => {
+    if (configItems.some(i => pathname.startsWith(i.href))) setConfigAberto(true);
+  }, [pathname]);
 
   if (status === "loading") {
     return (
@@ -34,6 +45,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
     );
   }
+
+  const configAtiva = configItems.some(i => pathname.startsWith(i.href));
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -75,14 +88,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Navegação */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto mt-2">
+          {/* Itens principais */}
           {navItems.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link key={item.href} href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                  active
-                    ? "text-white font-semibold shadow-sm"
-                    : "text-red-200 hover:text-white hover:bg-red-900"
+                  active ? "text-white font-semibold shadow-sm" : "text-red-200 hover:text-white hover:bg-red-900"
                 }`}
                 style={active ? { background: "#d4a017" } : {}}>
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,6 +104,52 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             );
           })}
+
+          {/* Configurações — menu expansível */}
+          <div className="pt-1">
+            <button
+              onClick={() => { if (sidebarOpen) setConfigAberto(v => !v); }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                configAtiva ? "text-white font-semibold shadow-sm" : "text-red-200 hover:text-white hover:bg-red-900"
+              }`}
+              style={configAtiva && !configAberto ? { background: "#d4a017" } : {}}>
+              {/* Ícone engrenagem */}
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {sidebarOpen && (
+                <>
+                  <span className="flex-1 text-left">Configurações</span>
+                  <svg className={`w-4 h-4 transition-transform ${configAberto ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </>
+              )}
+            </button>
+
+            {/* Sub-itens de configuração */}
+            {sidebarOpen && configAberto && (
+              <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-red-700 pl-2">
+                {configItems.map((item) => {
+                  const active = pathname.startsWith(item.href);
+                  return (
+                    <Link key={item.href} href={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all ${
+                        active ? "text-white font-semibold shadow-sm" : "text-red-200 hover:text-white hover:bg-red-900"
+                      }`}
+                      style={active ? { background: "#d4a017" } : {}}>
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                      </svg>
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Footer da sidebar */}
