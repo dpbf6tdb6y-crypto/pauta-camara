@@ -44,6 +44,7 @@ export default function ParecerPage() {
   const [votosLocais, setVotosLocais] = useState<Record<string, boolean | null>>({});
   const [modoEditar, setModoEditar] = useState(false);
   const [salvandoVotos, setSalvandoVotos] = useState(false);
+  const [comEmenda, setComEmenda] = useState(false);
 
   // Estado para comissões concluídas (expandir / editar)
   const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
@@ -293,22 +294,6 @@ export default function ParecerPage() {
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[comissaoAtiva.status] || "bg-gray-100 text-gray-600"}`}>
                       {statusLabel[comissaoAtiva.status] || comissaoAtiva.status}
                     </span>
-                    {!comissaoAtiva.parecer && (
-                      <button
-                        onClick={() => {
-                          setModalParecer(comissaoAtiva);
-                          setParecerForm({
-                            parecer: "favoravel",
-                            parecerTexto: "",
-                            analistaId: comissaoAtiva.analista?.id || comissaoAtiva.comissao.analistas?.[0]?.id || "",
-                          });
-                        }}
-                        className="text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition"
-                        style={{ background: "#8B0000" }}
-                      >
-                        Registrar Parecer
-                      </button>
-                    )}
                   </div>
                 </div>
 
@@ -389,9 +374,22 @@ export default function ParecerPage() {
                       </p>
                     )}
 
+                    {/* Checkbox emenda — aparece quando 2+ votos Sim */}
+                    {!comissaoAtiva.parecer && modoEditar && Object.values(votosLocais).filter(v => v === true).length >= 2 && (
+                      <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={comEmenda}
+                          onChange={e => setComEmenda(e.target.checked)}
+                          className="w-4 h-4 accent-amber-600"
+                        />
+                        <span className="text-xs text-gray-600">Incluir emenda da comissão</span>
+                      </label>
+                    )}
+
                     {/* Botões Cancelar / Registrar Parecer */}
                     {!comissaoAtiva.parecer && modoEditar && (
-                      <div className="flex gap-2 mt-3">
+                      <div className="flex gap-2 mt-2">
                         <button
                           onClick={cancelarEdicao}
                           className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-1.5 text-xs hover:bg-gray-50 transition"
@@ -399,23 +397,49 @@ export default function ParecerPage() {
                           Cancelar
                         </button>
                         <button
+                          disabled={salvandoVotos}
                           onClick={async () => {
-                            await salvarVotos();
+                            const propId = selecionada?.id;
+                            const comissaoId = comissaoAtiva.id;
+                            const analistaId = comissaoAtiva.analista?.id || comissaoAtiva.comissao.analistas?.[0]?.id;
                             const sim = Object.values(votosLocais).filter(v => v === true).length;
                             const nao = Object.values(votosLocais).filter(v => v === false).length;
-                            const parecerAuto = nao > sim ? "contrario" : "favoravel";
-                            setModalParecer(comissaoAtiva);
-                            setParecerForm({
-                              parecer: parecerAuto,
-                              parecerTexto: "",
-                              analistaId: comissaoAtiva.analista?.id || comissaoAtiva.comissao.analistas?.[0]?.id || "",
+                            const parecerAuto = nao > sim
+                              ? "contrario"
+                              : comEmenda ? "favoravel_com_emenda" : "favoravel";
+
+                            setSalvandoVotos(true);
+                            // Salva votos
+                            for (const [vereadorId, aprovado] of Object.entries(votosLocais)) {
+                              if (aprovado !== null) {
+                                await fetch("/api/tramitacao/voto", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ proposicaoComissaoId: comissaoId, vereadorId, aprovado }),
+                                });
+                              }
+                            }
+                            // Registra parecer automaticamente
+                            await fetch("/api/tramitacao/parecer", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                proposicaoComissaoId: comissaoId,
+                                parecer: parecerAuto,
+                                parecerTexto: "",
+                                ...(analistaId ? { analistaId } : {}),
+                              }),
                             });
+                            setSalvandoVotos(false);
+                            setModoEditar(false);
+                            setComEmenda(false);
+                            await carregar();
+                            if (propId) carregarDetalhe(propId);
                           }}
-                          disabled={salvandoVotos}
                           className="flex-1 text-white rounded-lg py-1.5 text-xs font-semibold transition"
                           style={{ background: "#8B0000" }}
                         >
-                          {salvandoVotos ? "Salvando..." : "Registrar Parecer"}
+                          {salvandoVotos ? "Registrando..." : "Registrar Parecer"}
                         </button>
                       </div>
                     )}
