@@ -216,13 +216,25 @@ export default function SessoesPage() {
 
   async function carregar() {
     const res = await fetch("/api/sessoes");
-    setLista(await res.json());
+    const data = await res.json();
+    setLista(data);
+    // Restaura a sessão selecionada após reload (via sessionStorage)
+    const savedId = sessionStorage.getItem("sessaoAbertaId");
+    if (savedId && data.find((s: Sessao) => s.id === savedId)) {
+      carregarDetalhe(savedId);
+    }
   }
 
   async function carregarDetalhe(id: string) {
+    sessionStorage.setItem("sessaoAbertaId", id);
     const res = await fetch(`/api/sessoes/${id}`);
     const data = await res.json();
     setDetalhe(data);
+  }
+
+  function fecharDetalhe() {
+    sessionStorage.removeItem("sessaoAbertaId");
+    setDetalhe(null);
   }
 
   useEffect(() => { carregar(); }, []);
@@ -448,6 +460,9 @@ async function moverEtapa(proposicaoId: string, etapa: string) {
                   <p className="text-sm text-gray-500 mt-0.5">{detalhe.itens.length} item(s) na pauta</p>
                 </div>
                 <div className="flex gap-2">
+                  <button onClick={fecharDetalhe} className="border border-gray-300 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-50">
+                    ✕ Sair
+                  </button>
                   <button onClick={() => window.print()} className="border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-50">
                     🖨️ Imprimir
                   </button>
