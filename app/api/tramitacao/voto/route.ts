@@ -10,18 +10,5 @@ export async function POST(req: Request) {
     create: { proposicaoComissaoId, vereadorId, aprovado },
   });
 
-  // Verificar se atingiu 2 votos de aprovação
-  const votos = await prisma.votoParecerVereador.findMany({
-    where: { proposicaoComissaoId },
-  });
-  const aprovados = votos.filter((v: { aprovado: boolean }) => v.aprovado).length;
-
-  if (aprovados >= 2) {
-    await prisma.proposicaoComissao.update({
-      where: { id: proposicaoComissaoId },
-      data: { status: "aprovado", dataVotacao: new Date() },
-    });
-  }
-
-  return NextResponse.json({ ok: true, aprovados });
+  return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 type Vereador = { id: string; nome: string; cargo?: string };
 type Membro = { id: string; vereador: Vereador; papel: string };
@@ -39,6 +39,11 @@ export default function ParecerPage() {
   const [selecionada, setSelecionada] = useState<Proposicao | null>(null);
   const [modalParecer, setModalParecer] = useState<ProposicaoComissao | null>(null);
   const [parecerForm, setParecerForm] = useState({ parecer: "favoravel", parecerTexto: "", analistaId: "" });
+
+  // Estado local de votos (não salva a cada clique)
+  const [votosLocais, setVotosLocais] = useState<Record<string, boolean | null>>({});
+  const [modoEditar, setModoEditar] = useState(false);
+  const [salvandoVotos, setSalvandoVotos] = useState(false);
 
   const etapasComissao = ["comissao1","comissao2","comissao3","comissao4","comissao5","parecer_conjunto"];
 
@@ -80,18 +85,55 @@ export default function ParecerPage() {
     if (propId) carregarDetalhe(propId);
   }
 
-  async function votar(proposicaoComissaoId: string, vereadorId: string, aprovado: boolean) {
-    await fetch("/api/tramitacao/voto", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ proposicaoComissaoId, vereadorId, aprovado }),
-    });
-    if (selecionada) carregarDetalhe(selecionada.id);
-  }
 
   const comissaoAtiva = selecionada?.comissoes.find(
     c => c.status === "em_analise" || c.status === "aguardando"
   );
+
+  // Inicializa votos locais a partir dos votos salvos sempre que a comissão ativa muda
+  const inicializarVotos = useCallback((comissao: ProposicaoComissao | undefined) => {
+    if (!comissao) return;
+    const init: Record<string, boolean | null> = {};
+    comissao.comissao.membros.forEach(m => {
+      const voto = comissao.votos.find(v => v.vereador.id === m.vereador.id);
+      init[m.vereador.id] = voto !== undefined ? voto.aprovado : null;
+    });
+    setVotosLocais(init);
+    // Abre em modo edição se ainda não há votos salvos
+    setModoEditar(comissao.votos.length === 0);
+  }, []);
+
+  useEffect(() => {
+    inicializarVotos(comissaoAtiva);
+  }, [comissaoAtiva?.id, inicializarVotos]);
+
+  function marcarVotoLocal(vereadorId: string, aprovado: boolean) {
+    setVotosLocais(prev => ({
+      ...prev,
+      [vereadorId]: prev[vereadorId] === aprovado ? null : aprovado,
+    }));
+  }
+
+  async function salvarVotos() {
+    if (!comissaoAtiva) return;
+    setSalvandoVotos(true);
+    for (const [vereadorId, aprovado] of Object.entries(votosLocais)) {
+      if (aprovado !== null) {
+        await fetch("/api/tramitacao/voto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ proposicaoComissaoId: comissaoAtiva.id, vereadorId, aprovado }),
+        });
+      }
+    }
+    setSalvandoVotos(false);
+    setModoEditar(false);
+    if (selecionada) carregarDetalhe(selecionada.id);
+  }
+
+  function cancelarEdicao() {
+    inicializarVotos(comissaoAtiva);
+  }
 
   const autorNome = (p: Proposicao) =>
     p.origemTipo === "vereador" ? (p.autorVereador?.nome || "—") : (p.autorExterno || "Executivo");
@@ -213,33 +255,61 @@ export default function ParecerPage() {
                 <div className="p-5 grid grid-cols-2 gap-6">
                   {/* Membros da comissão */}
                   <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-3">Membros da Comissão</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-semibold text-gray-700">Membros da Comissão</p>
+                      {!comissaoAtiva.parecer && !modoEditar && comissaoAtiva.votos.length > 0 && (
+                        <button
+                          onClick={() => setModoEditar(true)}
+                          className="text-xs px-2 py-1 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
+                        >
+                          ✏️ Editar votos
+                        </button>
+                      )}
+                    </div>
+
                     <div className="space-y-2">
                       {comissaoAtiva.comissao.membros.map((m) => {
-                        const voto = comissaoAtiva.votos.find(v => v.vereador.id === m.vereador.id);
+                        const votoLocal = votosLocais[m.vereador.id];
                         return (
                           <div key={m.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
                             <div>
                               <p className="text-sm text-gray-800 font-medium">{m.vereador.nome}</p>
                               <p className="text-xs text-gray-500 capitalize">{m.papel}</p>
                             </div>
-                            {!comissaoAtiva.parecer && (
+                            {/* Modo edição: botões Sim/Não */}
+                            {!comissaoAtiva.parecer && modoEditar && (
                               <div className="flex gap-1.5">
                                 <button
-                                  onClick={() => votar(comissaoAtiva.id, m.vereador.id, true)}
-                                  className={`text-xs px-2 py-1 rounded font-medium transition ${voto?.aprovado === true ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-green-100"}`}>
-                                  Sim
+                                  onClick={() => marcarVotoLocal(m.vereador.id, true)}
+                                  className={`text-xs px-3 py-1 rounded-lg font-medium transition border ${
+                                    votoLocal === true
+                                      ? "bg-green-500 text-white border-green-500"
+                                      : "bg-white text-gray-600 border-gray-300 hover:bg-green-50 hover:border-green-400"
+                                  }`}
+                                >
+                                  ✓ Sim
                                 </button>
                                 <button
-                                  onClick={() => votar(comissaoAtiva.id, m.vereador.id, false)}
-                                  className={`text-xs px-2 py-1 rounded font-medium transition ${voto?.aprovado === false ? "bg-red-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-red-100"}`}>
-                                  Não
+                                  onClick={() => marcarVotoLocal(m.vereador.id, false)}
+                                  className={`text-xs px-3 py-1 rounded-lg font-medium transition border ${
+                                    votoLocal === false
+                                      ? "bg-red-500 text-white border-red-500"
+                                      : "bg-white text-gray-600 border-gray-300 hover:bg-red-50 hover:border-red-400"
+                                  }`}
+                                >
+                                  ✗ Não
                                 </button>
                               </div>
                             )}
-                            {comissaoAtiva.parecer && voto && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${voto.aprovado ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                                {voto.aprovado ? "Sim" : "Não"}
+                            {/* Modo leitura: badge do voto */}
+                            {(!modoEditar || comissaoAtiva.parecer) && votoLocal !== null && (
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${votoLocal ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                {votoLocal ? "✓ Sim" : "✗ Não"}
+                              </span>
+                            )}
+                            {(!modoEditar || comissaoAtiva.parecer) && votoLocal === null && !comissaoAtiva.parecer && (
+                              <span className="text-xs px-2 py-0.5 rounded-full text-gray-400 bg-gray-100">
+                                Não votou
                               </span>
                             )}
                           </div>
@@ -249,10 +319,34 @@ export default function ParecerPage() {
                         <p className="text-xs text-gray-400">Nenhum membro cadastrado nesta comissão.</p>
                       )}
                     </div>
-                    {!comissaoAtiva.parecer && comissaoAtiva.comissao.membros.length > 0 && (
+
+                    {/* Resumo de votos */}
+                    {!comissaoAtiva.parecer && (
                       <p className="text-xs text-gray-400 mt-2">
-                        Votos registrados: {comissaoAtiva.votos.filter(v => v.aprovado).length} sim / {comissaoAtiva.votos.filter(v => !v.aprovado).length} não
+                        {Object.values(votosLocais).filter(v => v === true).length} sim ·{" "}
+                        {Object.values(votosLocais).filter(v => v === false).length} não ·{" "}
+                        {Object.values(votosLocais).filter(v => v === null).length} sem voto
                       </p>
+                    )}
+
+                    {/* Botões Salvar / Cancelar */}
+                    {!comissaoAtiva.parecer && modoEditar && (
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={cancelarEdicao}
+                          className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-1.5 text-xs hover:bg-gray-50 transition"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={salvarVotos}
+                          disabled={salvandoVotos}
+                          className="flex-1 text-white rounded-lg py-1.5 text-xs font-semibold transition"
+                          style={{ background: "#8B0000" }}
+                        >
+                          {salvandoVotos ? "Salvando..." : "Salvar votos"}
+                        </button>
+                      </div>
                     )}
                   </div>
 
