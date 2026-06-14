@@ -71,9 +71,28 @@ function gruposConjunto(steps: Step[]): { start: number; end: number }[] {
   return groups;
 }
 
-function MiniStepper({ prop }: { prop: Proposicao }) {
-  const steps = buildSteps(prop);
-  const current = getCurrentIndex(prop.etapaAtual, steps);
+function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string }) {
+  const baseSteps = buildSteps(prop);
+  const current = getCurrentIndex(prop.etapaAtual, baseSteps);
+
+  // Calcula quais comissões recebem o bracket de parecer conjunto
+  let conjuntoKeys: Set<string> = new Set();
+  if (resultado === "parecer_conjunto") {
+    const regulares = (prop.comissoes || []).filter(c => !isCRF(c));
+    const comissaoAtual = regulares.find(c => `comissao${c.ordem}` === prop.etapaAtual);
+    // Se já tem parecer de uma comissão, bracket nas próximas; senão, em todas
+    const pendentes = comissaoAtual
+      ? regulares.filter(c => c.ordem >= comissaoAtual.ordem)
+      : regulares;
+    pendentes.forEach(c => conjuntoKeys.add(`comissao${c.ordem}`));
+  } else {
+    // Usa os dados da proposição (parecerConjunto salvo no banco)
+    (prop.comissoes || []).filter(c => c.parecerConjunto && !isCRF(c)).forEach(c => {
+      conjuntoKeys.add(`comissao${c.ordem}`);
+    });
+  }
+
+  const steps = baseSteps.map(s => ({ ...s, parecerConjunto: conjuntoKeys.has(s.key) }));
   const grupos = gruposConjunto(steps);
   const temConjunto = grupos.length > 0;
 
@@ -661,7 +680,7 @@ function PautaItemRow({
 
         {/* Coluna direita: stepper + ações */}
         <div className="flex-shrink-0 flex flex-col items-end gap-2" style={{ minWidth: 0 }}>
-          <MiniStepper prop={item.proposicao} />
+          <MiniStepper prop={item.proposicao} resultado={item.resultado} />
 
           {/* Resultado + Retirar */}
           {sessaoAberta && (
