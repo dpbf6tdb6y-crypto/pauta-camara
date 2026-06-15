@@ -194,6 +194,7 @@ export default function ProposicoesPage() {
 
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroPauta, setFiltroPauta] = useState<"" | "a_pautar" | "pautadas" | "votadas">("");
+  const [idsNaPauta, setIdsNaPauta] = useState<Set<string>>(new Set());
 
   async function carregar() {
     const params = new URLSearchParams();
@@ -208,7 +209,18 @@ export default function ProposicoesPage() {
     setVereadores(v.filter((vr: any) => vr.ativo && vr.poder === "legislativo"));
     setExecutivo(v.filter((vr: any) => vr.ativo && vr.poder === "executivo"));
     setComissoes(c.filter((c: any) => c.ativa));
-    setSessoes(s.filter((ss: any) => ss.status === "agendada"));
+    const sessaosAberta = s.filter((ss: any) => ss.status === "agendada");
+    setSessoes(sessaosAberta);
+
+    // Carrega IDs das proposições já na próxima sessão
+    const proxima = sessaosAberta.sort((a: any, b: any) => new Date(a.data).getTime() - new Date(b.data).getTime())[0];
+    if (proxima) {
+      const sessaoDetalhe = await fetch(`/api/sessoes/${proxima.id}`).then(r => r.json());
+      const ids = new Set<string>((sessaoDetalhe.itens || []).map((i: any) => i.proposicao.id));
+      setIdsNaPauta(ids);
+    } else {
+      setIdsNaPauta(new Set());
+    }
   }
 
   useEffect(() => { carregar(); }, [filtroTipo]);
@@ -455,17 +467,20 @@ export default function ProposicoesPage() {
         {listaFiltrada.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400">Nenhuma proposição encontrada.</div>
         )}
-        {listaFiltrada.map((p) => (
+        {listaFiltrada.map((p) => {
+          const jaNaPauta = idsNaPauta.has(p.id);
+          return (
           <div key={p.id}
             className="bg-white rounded-xl shadow-sm p-5 transition"
-            style={selecionadas.has(p.id) ? { outline: "2px solid #8B0000", outlineOffset: 2 } : {}}>
+            style={jaNaPauta ? { outline: "2px solid #16a34a", outlineOffset: 2 } : selecionadas.has(p.id) ? { outline: "2px solid #8B0000", outlineOffset: 2 } : {}}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex-shrink-0 pt-0.5">
                 <input
                   type="checkbox"
                   checked={selecionadas.has(p.id)}
-                  onChange={() => toggleSelecionada(p.id)}
-                  className="w-4 h-4 rounded cursor-pointer accent-red-800"
+                  onChange={() => !jaNaPauta && toggleSelecionada(p.id)}
+                  disabled={jaNaPauta}
+                  className="w-4 h-4 rounded cursor-pointer accent-red-800 disabled:opacity-40 disabled:cursor-not-allowed"
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -474,6 +489,11 @@ export default function ProposicoesPage() {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor[p.status] || "bg-gray-100 text-gray-800"}`}>
                     {statusLabel[p.status] || p.status}
                   </span>
+                  {jaNaPauta && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-green-100 text-green-700">
+                      ✓ Já na pauta atual
+                    </span>
+                  )}
                   {p.regimeUrgencia && <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">Urgência</span>}
                   {etapaBadge[p.etapaAtual] && (
                     <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${etapaBadge[p.etapaAtual].color}`}>
@@ -541,7 +561,7 @@ export default function ProposicoesPage() {
 
             <Stepper p={p} />
           </div>
-        ))}
+        )})}
       </div>
         );
       })()}
