@@ -1,7 +1,8 @@
 "use client"
-import { ReactNode } from "react"
+import { ReactNode, useState } from "react"
 import { PautaItem, Proposicao, TIPO, isCRF } from "./types"
 import MiniStepper from "./MiniStepper"
+import DossieModal from "./DossieModal"
 
 const B = "px-1.5 py-0.5 rounded-full text-xs border transition whitespace-nowrap"
 
@@ -31,6 +32,7 @@ export default function ItemRow({ item, aberta, onResultado, onRetirar, propEmVo
   const { secao, proposicao: prop } = item
   const resultado = item.resultado ?? ""
   const locked = (secao === "apresentacao" || secao === "parecer") && !!propEmVotacao
+  const [dossie, setDossie] = useState(false)
 
   const retirarBtn = (
     <button onClick={onRetirar} className={`${B} font-medium bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100`}>
@@ -57,9 +59,15 @@ export default function ItemRow({ item, aberta, onResultado, onRetirar, propEmVo
       </div>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-800">
-            {item.ordem}. {TIPO[prop.tipo] || prop.tipo} {prop.numero}/{prop.ano}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-gray-800">
+              {item.ordem}. {TIPO[prop.tipo] || prop.tipo} {prop.numero}/{prop.ano}
+            </p>
+            <button onClick={() => setDossie(true)}
+              className="text-xs px-2 py-0.5 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 transition flex-shrink-0">
+              📋 Dossiê
+            </button>
+          </div>
           <p className="text-xs text-gray-500 mt-0.5 truncate">{prop.ementa}</p>
           {/* Stepper — histórico completo da proposição */}
           <MiniStepper prop={prop} resultado={resultado} secao={secao} />
@@ -82,6 +90,7 @@ export default function ItemRow({ item, aberta, onResultado, onRetirar, propEmVo
           )}
         </div>
       </div>
+      {dossie && <DossieModal proposicaoId={prop.id} onClose={() => setDossie(false)} />}
     </div>
   )
 }
