@@ -111,7 +111,8 @@ function gruposConjuntoEtapas(etapas: Etapa[]): { start: number; end: number }[]
 
 function Stepper({ p }: { p: Proposicao }) {
   const etapas = buildEtapas(p);
-  const idx = etapas.findIndex(e => e.key === p.etapaAtual);
+  const etapaResolvida = p.etapaAtual === "pronto_votar" ? "primeira_votacao" : p.etapaAtual;
+  const idx = etapas.findIndex(e => e.key === etapaResolvida);
   const grupos = gruposConjuntoEtapas(etapas);
   const temConjunto = grupos.length > 0;
 
