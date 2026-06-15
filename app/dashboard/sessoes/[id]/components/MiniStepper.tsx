@@ -12,7 +12,6 @@ function buildSteps(prop: Proposicao): Step[] {
     const regulares = prop.comissoes.filter(c => !isCRF(c))
     const crf = prop.comissoes.find(c => isCRF(c))
     regulares.forEach(c => steps.push({ key: `comissao${c.ordem}`, label: c.comissao.sigla || c.comissao.nome.slice(0, 3) }))
-    if (regulares.length) steps.push({ key: "pronto_votar", label: "Ag. Pautar" })
     steps.push({ key: "primeira_votacao", label: "1ª Vot." })
     if ((prop.numVotacoes ?? 1) >= 2) steps.push({ key: "segunda_votacao", label: "2ª Vot." })
     if (crf) steps.push({ key: `comissao${crf.ordem}`, label: crf.comissao.sigla || "CRF" })
