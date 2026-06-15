@@ -81,7 +81,7 @@ function gruposConjunto(steps: Step[]): { start: number; end: number }[] {
   return groups;
 }
 
-function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string }) {
+function MiniStepper({ prop, resultado, secao }: { prop: Proposicao; resultado?: string; secao?: string }) {
   const baseSteps = buildSteps(prop);
   let current = getCurrentIndex(prop.etapaAtual, baseSteps);
 
@@ -97,11 +97,17 @@ function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string
   if (resultado === "parecer_conjunto") {
     bracketType = "parecer_conjunto";
     const regulares = (prop.comissoes || []).filter(c => !isCRF(c));
-    const comissaoAtual = regulares.find(c => `comissao${c.ordem}` === prop.etapaAtual);
-    const pendentes = comissaoAtual
-      ? regulares.filter(c => c.ordem >= comissaoAtual.ordem)
-      : regulares;
-    pendentes.forEach(c => bracketKeys.add(`comissao${c.ordem}`));
+    if (secao === "apresentacao") {
+      // I-c: todas as comissões ficam laranjas (inclusive as já concluídas)
+      regulares.forEach(c => bracketKeys.add(`comissao${c.ordem}`));
+    } else {
+      // I-d (parecer): só as não concluídas (a partir da atual) ficam laranjas
+      const comissaoAtual = regulares.find(c => `comissao${c.ordem}` === prop.etapaAtual);
+      const pendentes = comissaoAtual
+        ? regulares.filter(c => c.ordem >= comissaoAtual.ordem)
+        : regulares;
+      pendentes.forEach(c => bracketKeys.add(`comissao${c.ordem}`));
+    }
   } else if (resultado === "dispensa_parecer") {
     bracketType = "dispensa_parecer";
     (prop.comissoes || []).filter(c => !isCRF(c)).forEach(c => bracketKeys.add(`comissao${c.ordem}`));
@@ -157,13 +163,17 @@ function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string
           {steps.map((step, i) => {
             const done = i < current;
             const active = i === current;
+            // Apresentação + Par. Conjunto: força laranja mesmo nas bolhas já concluídas
+            const forceOrange = secao === "apresentacao" && step.parecerConjunto;
             return (
               <div key={step.key} className="flex items-center">
                 <div className="flex flex-col items-center" style={{ minWidth: STEP_W }}>
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0"
                     style={
-                      done
+                      forceOrange
+                        ? { background: "#ea580c", borderColor: "#ea580c", color: "#fff" }
+                        : done
                         ? { background: "#16a34a", borderColor: "#16a34a", color: "#fff" }
                         : step.parecerConjunto
                         ? { background: "#ea580c", borderColor: "#ea580c", color: "#fff" }
@@ -172,7 +182,7 @@ function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string
                         : { background: "#f3f4f6", borderColor: "#d1d5db", color: "#9ca3af" }
                     }
                   >
-                    {done ? (
+                    {done && !forceOrange ? (
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
@@ -185,8 +195,8 @@ function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string
                     style={{
                       fontSize: 9,
                       maxWidth: STEP_W,
-                      color: done ? "#16a34a" : step.parecerConjunto ? "#ea580c" : active ? "#b5860f" : "#9ca3af",
-                      fontWeight: active || step.parecerConjunto ? 700 : 400,
+                      color: forceOrange ? "#ea580c" : done ? "#16a34a" : step.parecerConjunto ? "#ea580c" : active ? "#b5860f" : "#9ca3af",
+                      fontWeight: active || step.parecerConjunto || forceOrange ? 700 : 400,
                       wordBreak: "break-word",
                     }}
                   >
@@ -759,7 +769,7 @@ function PautaItemRow({
         <div className="flex items-start justify-between gap-4">
           {propInfo}
           <div className="flex-shrink-0 flex flex-col items-end gap-2" style={{ minWidth: 0 }}>
-            <MiniStepper prop={item.proposicao} resultado={resultado} />
+            <MiniStepper prop={item.proposicao} resultado={resultado} secao={secao} />
             {sessaoAberta && (
               <div className="flex flex-wrap items-center gap-1 justify-end" style={{ maxWidth: 520 }}>
                 {opts.map((opt, i) => (
@@ -824,7 +834,7 @@ function PautaItemRow({
         <div className="flex items-start justify-between gap-4">
           {propInfo}
           <div className="flex-shrink-0 flex flex-col items-end gap-2" style={{ minWidth: 0 }}>
-            <MiniStepper prop={item.proposicao} resultado={resultado} />
+            <MiniStepper prop={item.proposicao} resultado={resultado} secao={secao} />
             {sessaoAberta && (
               <div className="flex flex-wrap items-center gap-1 justify-end" style={{ maxWidth: 520 }}>
                 <button onClick={() => onResultado(resultado === "vista" ? "" : "vista")} className={sideCls(resultado === "vista")}>Vista</button>
@@ -865,7 +875,7 @@ function PautaItemRow({
       <div className="flex items-start justify-between gap-4">
         {propInfo}
         <div className="flex-shrink-0 flex flex-col items-end gap-2" style={{ minWidth: 0 }}>
-          <MiniStepper prop={item.proposicao} resultado={resultado} />
+          <MiniStepper prop={item.proposicao} resultado={resultado} secao={secao} />
           {sessaoAberta && (
             <div className="flex flex-wrap items-center gap-1 justify-end" style={{ maxWidth: 520 }}>
               {defOpts.map((opt, i) => (
