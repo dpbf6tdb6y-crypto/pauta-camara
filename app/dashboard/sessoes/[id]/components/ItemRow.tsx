@@ -78,14 +78,15 @@ function BotoesComissao({ prop, secao, resultado, locked, onResultado, retirarBt
   const primeiraOrdem = regulares[0]?.ordem ?? 0
   const etapaOrdem = prop.etapaAtual.startsWith("comissao")
     ? parseInt(prop.etapaAtual.replace("comissao", "")) : 0
+  const ultimaComissao = !regulares.find(c => c.ordem > etapaOrdem)
   const dispensaBloqueada = etapaOrdem > primeiraOrdem
   const comissoesPendentes = regulares.filter(c => c.ordem >= etapaOrdem).length
   const parecerConjuntoBloqueado = comissoesPendentes < 2
 
-  const opts: { value: string; label: string; readOnly?: boolean; disabled?: boolean }[] = [
-    { value: "comissao", label: "Comissão", readOnly: true },
-    { value: "parecer_conjunto", label: "Par. Conjunto", disabled: parecerConjuntoBloqueado },
-    { value: "dispensa_parecer", label: "Disp. Parecer", disabled: dispensaBloqueada },
+  const opts: { value: string; label: string; readOnly?: boolean; disabled?: boolean; hidden?: boolean }[] = [
+    { value: "comissao", label: "Comissão", readOnly: true, hidden: ultimaComissao },
+    { value: "parecer_conjunto", label: "Par. Conjunto", disabled: parecerConjuntoBloqueado, hidden: ultimaComissao },
+    { value: "dispensa_parecer", label: "Disp. Parecer", disabled: dispensaBloqueada, hidden: ultimaComissao },
     { value: "dispensa_intersticio", label: "Disp. Interstício" },
   ]
 
@@ -94,7 +95,7 @@ function BotoesComissao({ prop, secao, resultado, locked, onResultado, retirarBt
 
   return (
     <>
-      {opts.map((opt, i) => {
+      {opts.filter(opt => !opt.hidden).map((opt, i) => {
         const canClick = !opt.readOnly && !opt.disabled && !locked && !(isPermanent && i <= selIdx)
         const btnClass = !canClick ? cls("off")
           : selIdx < 0 && i === 0 ? `${B} bg-amber-100 text-amber-700 border-amber-400 font-semibold cursor-default`
