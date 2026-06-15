@@ -70,12 +70,13 @@ export default function ItemRow({ item, aberta, onResultado, onRetirar, propEmVo
           </div>
           <p className="text-xs text-gray-500 mt-0.5 truncate">{prop.ementa}</p>
           {/* Stepper — histórico completo da proposição */}
-          <MiniStepper prop={prop} resultado={resultado} secao={secao} />
+          <MiniStepper prop={prop} resultado={secao === "apresentacao" ? "" : resultado} secao={secao} />
         </div>
         <div className="flex-shrink-0 flex flex-col items-end gap-2">
           {aberta && (
             <div className="flex flex-wrap items-center gap-1 justify-end" style={{ maxWidth: 520 }}>
-              {(secao === "apresentacao" || secao === "parecer") && (
+              {secao === "apresentacao" && retirarBtn}
+              {secao === "parecer" && (
                 <BotoesComissao prop={prop} secao={secao} resultado={resultado} locked={locked}
                   onResultado={onResultado} retirarBtn={retirarBtn} onProximaComissao={onProximaComissao} />
               )}
