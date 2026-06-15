@@ -81,10 +81,12 @@ function BotoesComissao({ prop, secao, resultado, locked, onResultado, retirarBt
   const etapaOrdem = prop.etapaAtual.startsWith("comissao")
     ? parseInt(prop.etapaAtual.replace("comissao", "")) : 0
   const dispensaBloqueada = etapaOrdem > primeiraOrdem
+  const comissoesPendentes = regulares.filter(c => c.ordem >= etapaOrdem).length
+  const parecerConjuntoBloqueado = comissoesPendentes < 2
 
   const opts: { value: string; label: string; readOnly?: boolean; disabled?: boolean }[] = [
     { value: "comissao", label: "Comissão", readOnly: true },
-    { value: "parecer_conjunto", label: "Par. Conjunto" },
+    { value: "parecer_conjunto", label: "Par. Conjunto", disabled: parecerConjuntoBloqueado },
     { value: "dispensa_parecer", label: "Disp. Parecer", disabled: dispensaBloqueada },
     { value: "dispensa_intersticio", label: "Disp. Interstício" },
   ]
