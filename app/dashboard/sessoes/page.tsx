@@ -130,7 +130,7 @@ function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0"
                     style={
-                      done && !step.parecerConjunto
+                      done
                         ? { background: "#16a34a", borderColor: "#16a34a", color: "#fff" }
                         : step.parecerConjunto
                         ? { background: "#ea580c", borderColor: "#ea580c", color: "#fff" }
@@ -139,7 +139,7 @@ function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string
                         : { background: "#f3f4f6", borderColor: "#d1d5db", color: "#9ca3af" }
                     }
                   >
-                    {done && !step.parecerConjunto ? (
+                    {done ? (
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
@@ -152,7 +152,7 @@ function MiniStepper({ prop, resultado }: { prop: Proposicao; resultado?: string
                     style={{
                       fontSize: 9,
                       maxWidth: STEP_W,
-                      color: step.parecerConjunto ? "#ea580c" : done ? "#16a34a" : active ? "#b5860f" : "#9ca3af",
+                      color: done ? "#16a34a" : step.parecerConjunto ? "#ea580c" : active ? "#b5860f" : "#9ca3af",
                       fontWeight: active || step.parecerConjunto ? 700 : 400,
                       wordBreak: "break-word",
                     }}
