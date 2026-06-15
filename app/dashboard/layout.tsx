@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const configAtiva = configItems.some(i => pathname.startsWith(i.href));
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? "w-64" : "w-16"} flex flex-col transition-all duration-300 flex-shrink-0 shadow-lg sticky top-0 h-screen`}
         style={{ background: "linear-gradient(180deg, #6B0000 0%, #8B0000 40%, #a93226 100%)" }}>
