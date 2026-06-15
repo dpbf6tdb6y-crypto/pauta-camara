@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Sistema de Pautas - Câmara Municipal",
-  description: "Gestão de pautas e proposições legislativas",
+  title: "Legislativo Pauta - Câmara Municipal",
+  description: "Legislativo Pauta — Gestão de pautas e proposições legislativas",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

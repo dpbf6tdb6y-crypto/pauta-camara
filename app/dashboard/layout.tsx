@@ -65,8 +65,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </svg>
               </div>
               <div>
-                <p className="font-bold text-white text-xs leading-tight">Câmara Municipal</p>
-                <p className="text-xs leading-tight" style={{ color: "#f0c040" }}>Nova Lima — MG</p>
+                <p className="font-bold text-white text-xs leading-tight">Legislativo Pauta</p>
+                <p className="text-xs leading-tight" style={{ color: "#f0c040" }}>Câmara Municipal — Nova Lima</p>
               </div>
             </div>
           )}
@@ -170,7 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Topbar — fixo no topo */}
         <header className="bg-white shadow-sm px-6 py-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-40">
           <div>
-            <h2 className="text-sm font-semibold text-gray-700">Sistema de Gestão de Pautas</h2>
+            <h2 className="text-sm font-semibold text-gray-700">Legislativo Pauta</h2>
             <p className="text-xs text-gray-400">Câmara Municipal de Nova Lima — MG</p>
           </div>
           <div className="flex items-center gap-3">
