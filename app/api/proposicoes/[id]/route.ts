@@ -5,7 +5,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const data = await prisma.proposicao.findUnique({
     where: { id: params.id },
     include: {
-      autorVereador: true,
+      autores: { include: { vereador: true } },
       comissoes: {
         include: {
           comissao: { include: { membros: { include: { vereador: true } } } },
@@ -22,9 +22,17 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json();
-  const { comissoes, ...rest } = body;
+  const { comissoes, autorIds, ...rest } = body;
   if (rest.dataEntrada) rest.dataEntrada = new Date(rest.dataEntrada);
   const data = await prisma.proposicao.update({ where: { id: params.id }, data: rest });
+  if (autorIds !== undefined) {
+    await prisma.proposicaoAutor.deleteMany({ where: { proposicaoId: params.id } });
+    if (autorIds.length > 0) {
+      await prisma.proposicaoAutor.createMany({
+        data: autorIds.map((vereadorId: string) => ({ proposicaoId: params.id, vereadorId })),
+      });
+    }
+  }
   if (comissoes !== undefined) {
     await prisma.proposicaoComissao.deleteMany({ where: { proposicaoId: params.id } });
     if (comissoes.length > 0) {

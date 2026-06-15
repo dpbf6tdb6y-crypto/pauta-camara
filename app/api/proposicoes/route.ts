@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     },
     orderBy: { createdAt: "desc" },
     include: {
-      autorVereador: true,
+      autores: { include: { vereador: true } },
       comissoes: {
         include: { comissao: true },
         orderBy: { ordem: "asc" },
@@ -25,10 +25,15 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { comissoes, ...rest } = body;
+  const { comissoes, autorIds, ...rest } = body;
   const proposicao = await prisma.proposicao.create({
     data: { ...rest, dataEntrada: new Date(rest.dataEntrada) },
   });
+  if (autorIds?.length) {
+    await prisma.proposicaoAutor.createMany({
+      data: autorIds.map((vereadorId: string) => ({ proposicaoId: proposicao.id, vereadorId })),
+    });
+  }
   if (comissoes?.length) {
     await prisma.proposicaoComissao.createMany({
       data: comissoes.map((c: { comissaoId: string; ordem: number; parecerConjunto?: boolean }) => ({

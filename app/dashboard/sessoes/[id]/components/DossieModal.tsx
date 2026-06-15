@@ -20,7 +20,7 @@ type PropDetalhe = {
   origemTipo: string; autorExterno?: string; dataEntrada: string
   status: string; dispensaParecer: boolean; dispensaIntersticio: boolean
   regimeUrgencia: boolean; numVotacoes: number; destinoFinal: string
-  autorVereador?: Vereador
+  autores: { vereador: Vereador }[]
   comissoes: ProposicaoComissao[]
   emendas: Emenda[]
 }
@@ -45,7 +45,9 @@ export default function DossieModal({ proposicaoId, onClose }: { proposicaoId: s
     </div>
   )
 
-  const autor = prop.autorVereador ? `${prop.autorVereador.nome} (${prop.autorVereador.partido})` : prop.autorExterno || "—"
+  const autor = prop.origemTipo === "vereador"
+    ? (prop.autores?.map(a => `${a.vereador.nome} (${a.vereador.partido})`).join(", ") || "—")
+    : (prop.autorExterno || "—")
 
   return (
     <>

@@ -30,7 +30,7 @@ model Vereador {
   createdAt   DateTime @default(now())
 
   comissoes      ComissaoMembro[]
-  propostaAutor  Proposicao[]         @relation("AutorVereador")
+  proposicoes    ProposicaoAutor[]
   votosPareceres VotoParecerVereador[]
   emendas        Emenda[]             @relation("EmendaAutorVereador")
 }
@@ -81,7 +81,6 @@ model Proposicao {
   tipo            String
   ementa          String
   origemTipo      String
-  autorVereadorId String?
   autorExterno    String?
   dataEntrada     DateTime
   status          String   @default("em_tramitacao")
@@ -93,10 +92,22 @@ model Proposicao {
   destinoFinal        String   @default("sancao")
   createdAt           DateTime @default(now())
 
-  autorVereador Vereador?           @relation("AutorVereador", fields: [autorVereadorId], references: [id])
+  autores       ProposicaoAutor[]
   comissoes     ProposicaoComissao[]
   emendas       Emenda[]
   pautaItens    PautaItem[]
+}
+
+model ProposicaoAutor {
+  id           String     @id @default(cuid())
+  proposicaoId String
+  vereadorId   String
+  createdAt    DateTime   @default(now())
+
+  proposicao   Proposicao @relation(fields: [proposicaoId], references: [id])
+  vereador     Vereador   @relation(fields: [vereadorId], references: [id])
+
+  @@unique([proposicaoId, vereadorId])
 }
 
 model ProposicaoComissao {

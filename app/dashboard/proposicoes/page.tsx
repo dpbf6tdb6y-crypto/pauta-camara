@@ -6,7 +6,7 @@ type Comissao = { id: string; nome: string; sigla?: string };
 type ComissaoItem = { comissao: Comissao; ordem: number; parecerConjunto: boolean };
 type Proposicao = {
   id: string; numero: string; ano: number; tipo: string; ementa: string;
-  origemTipo: string; autorVereador?: Vereador; autorExterno?: string;
+  origemTipo: string; autores: { vereador: Vereador }[]; autorExterno?: string;
   dataEntrada: string; status: string;
   dispensaParecer: boolean; dispensaIntersticio: boolean;
   regimeUrgencia: boolean; numVotacoes: number; etapaAtual: string;
@@ -44,7 +44,7 @@ const secaoOpts = [
 
 const emptyForm = {
   numero: "", ano: new Date().getFullYear(), tipo: "pl", ementa: "",
-  origemTipo: "vereador", autorVereadorId: "", autorExterno: "",
+  origemTipo: "vereador", autorIds: [] as string[], autorExterno: "",
   dataEntrada: new Date().toISOString().slice(0, 10),
   dispensaParecer: false, dispensaIntersticio: false, regimeUrgencia: false,
   numVotacoes: 1, status: "em_tramitacao", destinoFinal: "sancao",
@@ -235,7 +235,7 @@ export default function ProposicoesPage() {
       tipo: p.tipo,
       ementa: p.ementa,
       origemTipo: p.origemTipo,
-      autorVereadorId: p.autorVereador?.id || "",
+      autorIds: p.autores?.map(a => a.vereador.id) || [],
       autorExterno: p.autorExterno || "",
       dataEntrada: p.dataEntrada.slice(0, 10),
       dispensaParecer: p.dispensaParecer,
@@ -272,10 +272,15 @@ export default function ProposicoesPage() {
     setForm({ ...form, comissoes: novas });
   }
 
+  function toggleAutor(id: string) {
+    const curr = form.autorIds;
+    setForm({ ...form, autorIds: curr.includes(id) ? curr.filter(x => x !== id) : [...curr, id] });
+  }
+
   async function salvar() {
     const payload = {
       ...form,
-      autorVereadorId: form.origemTipo === "vereador" && form.autorVereadorId ? form.autorVereadorId : null,
+      autorIds: form.origemTipo === "vereador" ? form.autorIds : [],
       autorExterno: form.origemTipo === "executivo" ? form.autorExterno : null,
       comissoes: form.comissoes.filter(c => c.comissaoId),
     };
@@ -386,7 +391,9 @@ export default function ProposicoesPage() {
   }
 
   const autorNome = (p: Proposicao) =>
-    p.origemTipo === "vereador" ? (p.autorVereador?.nome || "—") : (p.autorExterno || "Executivo");
+    p.origemTipo === "vereador"
+      ? (p.autores?.map(a => a.vereador.nome).join(", ") || "—")
+      : (p.autorExterno || "Executivo");
 
   return (
     <div className="p-6">
@@ -724,11 +731,18 @@ export default function ProposicoesPage() {
               <div>
                 {form.origemTipo === "vereador" ? (
                   <>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Autor (Vereador)</label>
-                    <select value={form.autorVereadorId} onChange={(e) => setForm({ ...form, autorVereadorId: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                      <option value="">Selecione...</option>
-                      {vereadores.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}
-                    </select>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Autor(es) — Vereador(es)
+                      {form.autorIds.length > 0 && <span className="ml-1 text-blue-600 font-semibold">({form.autorIds.length} selecionado{form.autorIds.length > 1 ? "s" : ""})</span>}
+                    </label>
+                    <div className="max-h-36 overflow-y-auto border border-gray-300 rounded-lg p-2 space-y-0.5">
+                      {vereadores.map(v => (
+                        <label key={v.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+                          <input type="checkbox" checked={form.autorIds.includes(v.id)} onChange={() => toggleAutor(v.id)} className="accent-blue-600" />
+                          {v.nome}
+                        </label>
+                      ))}
+                    </div>
                   </>
                 ) : (
                   <>
