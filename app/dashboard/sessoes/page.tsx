@@ -299,18 +299,12 @@ export default function SessoesPage() {
     );
 
     if (resultado === "dispensa_intersticio") {
-      // Adiciona automaticamente na segunda parte (votação) se ainda não estiver
-      const jaEmVotacao = novosItens.some(
-        i => i.proposicao.id === item.proposicao.id && i.secao === "votacao"
+      // Move o item para votação (remove da seção de apresentação/parecer)
+      const itensVotacao = novosItens.filter(i => i.secao === "votacao");
+      const maxOrdem = itensVotacao.length > 0 ? Math.max(...itensVotacao.map(i => i.ordem)) : 0;
+      novosItens = novosItens.map(i =>
+        i.id === item.id ? { ...i, secao: "votacao", ordem: maxOrdem + 1 } : i
       );
-      if (!jaEmVotacao) {
-        const itensVotacao = novosItens.filter(i => i.secao === "votacao");
-        const maxOrdem = itensVotacao.length > 0 ? Math.max(...itensVotacao.map(i => i.ordem)) : 0;
-        novosItens = [
-          ...novosItens,
-          { id: `_auto_${Date.now()}`, proposicao: item.proposicao, ordem: maxOrdem + 1, secao: "votacao" },
-        ];
-      }
     } else if (resultado === "aprovado") {
       // Aprovado: adiciona automaticamente na Comissão de Redação Final (se tiver CRF)
       const hasCRF = (item.proposicao.comissoes || []).some(c => isCRF(c));
