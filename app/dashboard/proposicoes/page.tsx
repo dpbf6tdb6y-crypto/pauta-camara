@@ -193,7 +193,7 @@ export default function ProposicoesPage() {
   const [secaoSelecionada, setSecaoSelecionada] = useState("votacao");
 
   const [filtroTipo, setFiltroTipo] = useState("");
-  const [filtroPauta, setFiltroPauta] = useState<"" | "a_pautar" | "pautadas">("");
+  const [filtroPauta, setFiltroPauta] = useState<"" | "a_pautar" | "pautadas" | "votadas">("");
 
   async function carregar() {
     const params = new URLSearchParams();
@@ -426,6 +426,7 @@ export default function ProposicoesPage() {
             { key: "" as const, label: "Todas" },
             { key: "a_pautar" as const, label: "A Pautar" },
             { key: "pautadas" as const, label: "Já Pautadas" },
+            { key: "votadas" as const, label: "Votadas" },
           ].map(opt => (
             <button key={opt.key}
               onClick={() => setFiltroPauta(opt.key)}
@@ -441,7 +442,9 @@ export default function ProposicoesPage() {
 
       {(() => {
         const aPautarEtapas = ["protocolado"];
+        const votadasStatus = ["aguardando_sancao", "promulgada", "aprovada", "rejeitada", "arquivada"];
         const listaFiltrada = lista.filter(p => {
+          if (filtroPauta === "votadas") return votadasStatus.includes(p.status);
           if (p.status === "arquivada") return false;
           if (filtroPauta === "a_pautar") return aPautarEtapas.includes(p.etapaAtual);
           if (filtroPauta === "pautadas") return !aPautarEtapas.includes(p.etapaAtual);
