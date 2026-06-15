@@ -78,6 +78,8 @@ export default function MiniStepper({ prop, resultado, secao }: {
   const resultadoParaEtapa: Record<string, string> = {
     dispensa_intersticio: "primeira_votacao",
     primeira_votacao:     "primeira_votacao",
+    aprovado_1a:          "segunda_votacao",
+    reprovado_1a:         "segunda_votacao",
     segunda_votacao:      "segunda_votacao",
     aprovado:   prop.destinoFinal === "promulgacao" ? "promulgada" : "aguardando_sancao",
     sancao:     "aguardando_sancao",
