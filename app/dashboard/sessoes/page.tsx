@@ -712,10 +712,16 @@ function PautaItemRow({
       { value: "dispensa_intersticio", label: "Disp. Interstício" },
     ];
     const selIdx = resultado ? opts.findIndex(o => o.value === resultado) : -1;
-    const permanent = resultado === "parecer_conjunto" || resultado === "dispensa_parecer";
+    // "permanent" = não pode desfazer nem regredir, mas pode avançar para opções posteriores
+    const isPermanent = resultado === "parecer_conjunto" || resultado === "dispensa_parecer";
+    const canClick = (i: number, opt: { readOnly?: boolean }) => {
+      if (opt.readOnly || locked) return false;
+      if (isPermanent && i <= selIdx) return false; // não pode regredir nem desfazer
+      return true;
+    };
 
     const btnCls = (i: number, opt: { readOnly?: boolean }) => {
-      if (locked) return `${B} bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed opacity-50`;
+      if (!canClick(i, opt)) return `${B} bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed opacity-50`;
       if (selIdx < 0) {
         if (i === 0) return `${B} bg-amber-100 text-amber-700 border-amber-400 font-semibold cursor-default`;
         return `${B} bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100`;
@@ -736,9 +742,9 @@ function PautaItemRow({
                 {opts.map((opt, i) => (
                   <button
                     key={opt.value}
-                    disabled={opt.readOnly || locked || permanent}
+                    disabled={!canClick(i, opt)}
                     onClick={() => {
-                      if (opt.readOnly || locked || permanent) return;
+                      if (!canClick(i, opt)) return;
                       onResultado(resultado === opt.value ? "" : opt.value);
                     }}
                     className={btnCls(i, opt)}
