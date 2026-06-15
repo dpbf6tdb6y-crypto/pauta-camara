@@ -121,35 +121,72 @@ function BotoesComissao({ prop, secao, resultado, locked, onResultado, retirarBt
 
 // ── Segunda Parte: Votação ─────────────────────────────────────────────────────
 
-function BotoesVotacao({ resultado, onResultado, retirarBtn, numVotacoes, destinoFinal }: {
+function BotoesVotacao({ resultado, onResultado, retirarBtn, numVotacoes }: {
   resultado: string; onResultado: (r: string) => void; retirarBtn: ReactNode
-  numVotacoes: number; destinoFinal: string
+  numVotacoes: number
 }) {
-  const emVotacao = resultado === "primeira_votacao" || resultado === "segunda_votacao"
-  const beforeVotacao = !["primeira_votacao","segunda_votacao","aprovado","sancao","promulgacao","reprovado","arquivo"].includes(resultado)
-
-  const main: { v: string; l: string }[] = [{ v: "primeira_votacao", l: "1ª Votação" }]
-  if (numVotacoes >= 2) main.push({ v: "segunda_votacao", l: "2ª Votação" })
-  main.push({ v: "aprovado", l: "Aprovado" })
-  if (resultado === "aprovado")
-    main.push(destinoFinal === "promulgacao" ? { v: "promulgacao", l: "Promulgação" } : { v: "sancao", l: "Sanção" })
-  main.push({ v: "reprovado", l: "Reprovado" })
-  if (resultado === "reprovado") main.push({ v: "arquivo", l: "Arquivo" })
-
-  const selIdx = main.findIndex(o => o.v === resultado)
   const tog = (v: string) => onResultado(resultado === v ? "" : v)
   const side = (v: string) => resultado === v ? cls("active") : cls("idle")
 
+  // Estados possíveis
+  const antes1a = !["primeira_votacao", "aprovado_1a", "reprovado_1a", "segunda_votacao", "aprovado", "reprovado"].includes(resultado)
+  const em1a = resultado === "primeira_votacao"
+  const aprovado1a = resultado === "aprovado_1a"
+  const reprovado1a = resultado === "reprovado_1a"
+  const em2a = resultado === "segunda_votacao"
+  const final = resultado === "aprovado" || resultado === "reprovado"
+
+  // Emendas forçam 2ª votação (armazenado como "emenda" antes da 1ª votação)
+  const temEmenda = resultado === "emenda"
+  const precisa2a = numVotacoes >= 2 || temEmenda
+
   return (
     <>
-      <button onClick={() => tog("vista")} className={side("vista")}>Vista</button>
-      <button onClick={() => tog("adiamento")} className={side("adiamento")}>Adiamento</button>
-      {beforeVotacao && <button onClick={() => tog("emenda")} className={side("emenda")}>Emendas</button>}
-      {emVotacao && <button onClick={() => tog("dispensa_votacao")} className={side("dispensa_votacao")}>Disp. Votação</button>}
-      <div className="w-px h-4 bg-gray-200 mx-0.5 flex-shrink-0" />
-      {main.map((opt, i) => (
-        <button key={opt.v} onClick={() => tog(opt.v)} className={seqCls(i, selIdx)}>{opt.l}</button>
-      ))}
+      {/* Antes da 1ª votação: Vista, Adiamento, Emendas */}
+      {(antes1a || temEmenda) && (
+        <>
+          <button onClick={() => tog("vista")} className={side("vista")}>Vista</button>
+          <button onClick={() => tog("adiamento")} className={side("adiamento")}>Adiamento</button>
+          <button onClick={() => tog("emenda")} className={side("emenda")}>Emendas</button>
+          <div className="w-px h-4 bg-gray-200 mx-0.5 flex-shrink-0" />
+          <button onClick={() => tog("primeira_votacao")} className={cls("idle")}>1ª Votação</button>
+        </>
+      )}
+
+      {/* Durante 1ª votação */}
+      {em1a && (
+        <>
+          <span className={cls("active")}>1ª Votação</span>
+          <button onClick={() => tog(precisa2a ? "aprovado_1a" : "aprovado")} className={cls("idle")}>Aprovado</button>
+          <button onClick={() => tog(precisa2a ? "reprovado_1a" : "reprovado")} className={cls("idle")}>Reprovado</button>
+        </>
+      )}
+
+      {/* Aprovado na 1ª → aguardando 2ª */}
+      {aprovado1a && (
+        <>
+          <span className={cls("done")}>✓ Aprovado 1ª</span>
+          <div className="w-px h-4 bg-gray-200 mx-0.5 flex-shrink-0" />
+          <button onClick={() => tog("segunda_votacao")} className={cls("idle")}>2ª Votação</button>
+        </>
+      )}
+
+      {/* Reprovado na 1ª → final */}
+      {reprovado1a && <span className={`${cls("done")} !bg-red-100 !text-red-700 !border-red-300`}>✗ Reprovado</span>}
+
+      {/* Durante 2ª votação */}
+      {em2a && (
+        <>
+          <span className={cls("active")}>2ª Votação</span>
+          <button onClick={() => tog("aprovado")} className={cls("idle")}>Aprovado</button>
+          <button onClick={() => tog("reprovado")} className={cls("idle")}>Reprovado</button>
+        </>
+      )}
+
+      {/* Resultado final */}
+      {resultado === "aprovado" && <span className={cls("done")}>✓ Aprovado</span>}
+      {resultado === "reprovado" && <span className={`${cls("done")} !bg-red-100 !text-red-700 !border-red-300`}>✗ Reprovado</span>}
+
       {retirarBtn}
     </>
   )

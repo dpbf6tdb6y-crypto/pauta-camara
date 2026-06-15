@@ -78,17 +78,28 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
         });
         break;
       }
-      case "primeira_votacao": {
+      case "primeira_votacao":
+      case "emenda": {
+        // Ficou em votação ou com emendas — volta para pautar na próxima sessão
         await prisma.proposicao.update({
           where: { id: prop.id },
           data: { etapaAtual: "primeira_votacao", status: "em_tramitacao" },
         });
         break;
       }
+      case "aprovado_1a":
       case "segunda_votacao": {
+        // Aprovado na 1ª mas precisa de 2ª votação — volta para pautar
         await prisma.proposicao.update({
           where: { id: prop.id },
           data: { etapaAtual: "segunda_votacao", status: "em_tramitacao" },
+        });
+        break;
+      }
+      case "reprovado_1a": {
+        await prisma.proposicao.update({
+          where: { id: prop.id },
+          data: { etapaAtual: "rejeitada", status: "rejeitada" },
         });
         break;
       }
