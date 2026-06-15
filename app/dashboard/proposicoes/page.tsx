@@ -73,10 +73,6 @@ function buildEtapas(p: Proposicao): Etapa[] {
     etapas.push({ key: `comissao${c.ordem}`, label: c.comissao?.sigla || `Com. ${i + 1}`, parecerConjunto: c.parecerConjunto });
   });
 
-  if (regulares.length > 0 && !p.dispensaParecer) {
-    etapas.push({ key: "pronto_votar", label: "Ag. Pautar" });
-  }
-
   etapas.push({ key: "primeira_votacao", label: "1ª Votação" });
   if (p.numVotacoes >= 2) etapas.push({ key: "segunda_votacao", label: "2ª Votação" });
 
