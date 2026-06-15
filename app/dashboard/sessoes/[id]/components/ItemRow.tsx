@@ -81,7 +81,8 @@ export default function ItemRow({ item, aberta, onResultado, onRetirar, propEmVo
               )}
               {secao === "votacao" && (
                 <BotoesVotacao resultado={resultado} onResultado={onResultado} retirarBtn={retirarBtn}
-                  numVotacoes={prop.numVotacoes ?? 1} destinoFinal={prop.destinoFinal ?? "sancao"} />
+                  numVotacoes={prop.numVotacoes ?? 1} destinoFinal={prop.destinoFinal ?? "sancao"}
+                  etapaAtual={prop.etapaAtual} />
               )}
               {(secao === "redacao_final" || secao === "requerimento") && (
                 <BotoesSimples secao={secao} resultado={resultado} onResultado={onResultado} retirarBtn={retirarBtn} />
@@ -148,22 +149,24 @@ function BotoesComissao({ prop, secao, resultado, locked, onResultado, retirarBt
 
 // ── Segunda Parte: Votação ─────────────────────────────────────────────────────
 
-function BotoesVotacao({ resultado, onResultado, retirarBtn, numVotacoes }: {
+function BotoesVotacao({ resultado, onResultado, retirarBtn, numVotacoes, etapaAtual }: {
   resultado: string; onResultado: (r: string) => void; retirarBtn: ReactNode
-  numVotacoes: number
+  numVotacoes: number; destinoFinal?: string; etapaAtual?: string
 }) {
   const tog = (v: string) => onResultado(resultado === v ? "" : v)
   const side = (v: string) => resultado === v ? cls("active") : cls("idle")
 
+  // Proposição já está aguardando 2ª votação (vinda de sessão anterior)
+  const ja2aVotacao = etapaAtual === "segunda_votacao" && resultado === ""
+
   // Estados possíveis
-  const antes1a = !["primeira_votacao", "aprovado_1a", "reprovado_1a", "segunda_votacao", "aprovado", "reprovado"].includes(resultado)
+  const antes1a = !ja2aVotacao && !["primeira_votacao", "aprovado_1a", "reprovado_1a", "segunda_votacao", "aprovado", "reprovado"].includes(resultado)
   const em1a = resultado === "primeira_votacao"
   const aprovado1a = resultado === "aprovado_1a"
   const reprovado1a = resultado === "reprovado_1a"
-  const em2a = resultado === "segunda_votacao"
-  const final = resultado === "aprovado" || resultado === "reprovado"
+  const em2a = resultado === "segunda_votacao" || ja2aVotacao
 
-  // Emendas forçam 2ª votação (armazenado como "emenda" antes da 1ª votação)
+  // Emendas forçam 2ª votação
   const temEmenda = resultado === "emenda"
   const precisa2a = numVotacoes >= 2 || temEmenda
 
@@ -177,6 +180,15 @@ function BotoesVotacao({ resultado, onResultado, retirarBtn, numVotacoes }: {
           <button onClick={() => tog("emenda")} className={side("emenda")}>Emendas</button>
           <div className="w-px h-4 bg-gray-200 mx-0.5 flex-shrink-0" />
           <button onClick={() => tog("primeira_votacao")} className={cls("idle")}>1ª Votação</button>
+        </>
+      )}
+
+      {/* Já aguardando 2ª votação (vinda de sessão anterior) */}
+      {ja2aVotacao && (
+        <>
+          <span className={cls("done")}>✓ Aprovado 1ª</span>
+          <div className="w-px h-4 bg-gray-200 mx-0.5 flex-shrink-0" />
+          <button onClick={() => tog("segunda_votacao")} className={cls("idle")}>2ª Votação</button>
         </>
       )}
 
