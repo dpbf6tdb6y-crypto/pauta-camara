@@ -1,0 +1,166 @@
+'use client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+const TIPOS = ['PL', 'PLC', 'PDL', 'REQ', 'IND', 'MOC']
+const STATUS_LIST = ['Aguardando', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
+
+const STATUS_COR: Record<string, string> = {
+  'Aguardando':  'bg-yellow-100 text-yellow-800',
+  'Em análise':  'bg-blue-100 text-blue-800',
+  'Aprovado':    'bg-green-100 text-green-800',
+  'Rejeitado':   'bg-red-100 text-red-800',
+  'Arquivado':   'bg-gray-100 text-gray-700',
+  'Retirado':    'bg-orange-100 text-orange-800',
+}
+
+export default function SeggovPage() {
+  const router = useRouter()
+  const [itens, setItens] = useState<any[]>([])
+  const [vereadores, setVereadores] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filtroTipo, setFiltroTipo] = useState('')
+  const [filtroStatus, setFiltroStatus] = useState('')
+  const [filtroVereador, setFiltroVereador] = useState('')
+
+  async function carregar() {
+    setLoading(true)
+    const params = new URLSearchParams()
+    if (filtroTipo) params.set('tipo', filtroTipo)
+    if (filtroStatus) params.set('status', filtroStatus)
+    if (filtroVereador) params.set('vereadorId', filtroVereador)
+    const res = await fetch(`/api/segov?${params}`)
+    setItens(await res.json())
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetch('/api/vereadores').then(r => r.json()).then(setVereadores)
+  }, [])
+
+  useEffect(() => { carregar() }, [filtroTipo, filtroStatus, filtroVereador])
+
+  async function excluir(id: string) {
+    if (!confirm('Excluir este item?')) return
+    await fetch(`/api/segov/${id}`, { method: 'DELETE' })
+    carregar()
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-800">SEGOV</h1>
+          <p className="text-sm text-gray-500">Secretaria de Governo — proposições e status</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/dashboard/segov/importar"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Importar Pauta
+          </Link>
+          <Link href="/dashboard/segov/novo"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition"
+            style={{ background: '#8B0000' }}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nova SEGOV
+          </Link>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3">
+        <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+          <option value="">Todos os tipos</option>
+          {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+          <option value="">Todos os status</option>
+          {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={filtroVereador} onChange={e => setFiltroVereador(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+          <option value="">Todos os vereadores</option>
+          {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
+        </select>
+        {(filtroTipo || filtroStatus || filtroVereador) && (
+          <button onClick={() => { setFiltroTipo(''); setFiltroStatus(''); setFiltroVereador('') }}
+            className="text-sm text-red-700 hover:underline">
+            Limpar filtros
+          </button>
+        )}
+      </div>
+
+      {/* Tabela */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center py-16">
+            <div className="w-8 h-8 border-4 border-red-800 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : itens.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="font-medium">Nenhum item encontrado</p>
+            <p className="text-sm mt-1">Cadastre um novo item ou ajuste os filtros</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Proposição</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Ementa</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Vereador</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Data Envio</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {itens.map((item: any) => (
+                <tr key={item.id} className="hover:bg-gray-50 transition">
+                  <td className="px-4 py-3 font-semibold text-gray-800 whitespace-nowrap">
+                    <span className="text-xs bg-red-100 text-red-800 rounded px-1.5 py-0.5 mr-1.5">{item.tipo}</span>
+                    {item.numero}/{item.ano}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{item.ementa}</td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{item.vereador?.nome || '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    {item.dataEnvio ? new Date(item.dataEnvio).toLocaleDateString('pt-BR') : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2 justify-end">
+                      <Link href={`/dashboard/segov/${item.id}/editar`}
+                        className="text-xs text-blue-600 hover:underline font-medium">Editar</Link>
+                      <button onClick={() => excluir(item.id)}
+                        className="text-xs text-red-500 hover:underline font-medium">Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {!loading && itens.length > 0 && (
+          <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-400">
+            {itens.length} {itens.length === 1 ? 'item' : 'itens'}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

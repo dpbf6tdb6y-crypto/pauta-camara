@@ -33,6 +33,7 @@ model Vereador {
   proposicoes    ProposicaoAutor[]
   votosPareceres VotoParecerVereador[]
   emendas        Emenda[]             @relation("EmendaAutorVereador")
+  segov          Segov[]
 }
 
 model Comissao {
@@ -183,4 +184,20 @@ model PautaItem {
 
   sessao     Sessao     @relation(fields: [sessaoId], references: [id])
   proposicao Proposicao @relation(fields: [proposicaoId], references: [id])
+}
+
+model Segov {
+  id         String    @id @default(cuid())
+  numero     String
+  ano        Int       @default(2026)
+  tipo       String
+  ementa     String
+  vereadorId String?
+  status     String    @default("Aguardando")
+  dataEnvio  DateTime?
+  observacao String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  vereador Vereador? @relation(fields: [vereadorId], references: [id])
 }
