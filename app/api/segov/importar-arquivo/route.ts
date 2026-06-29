@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { createRequire } from "module";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 
-const nodeRequire = createRequire(process.cwd() + "/package.json");
+function extrairTextoPdf(buffer: Buffer): string {
+  const raw = buffer.toString("latin1");
+  return (raw.match(/[\x21-\x7E]{2,}/g) || []).join(" ");
+}
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -21,9 +23,7 @@ export async function POST(req: Request) {
 
   try {
     if (nome.endsWith(".pdf")) {
-      const pdfParse: (buf: Buffer) => Promise<{ text: string }> = nodeRequire("pdf-parse");
-      const data = await pdfParse(buffer);
-      texto = data.text;
+      texto = extrairTextoPdf(buffer);
     } else if (nome.endsWith(".docx") || nome.endsWith(".doc")) {
       const result = await mammoth.extractRawText({ buffer });
       texto = result.value;

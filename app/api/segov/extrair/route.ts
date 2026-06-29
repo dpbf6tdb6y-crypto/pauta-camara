@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createRequire } from "module";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 
-// createRequire cria um require nativo do Node.js que bypassa o webpack
-const nodeRequire = createRequire(process.cwd() + "/package.json");
+function extrairTextoPdf(buffer: Buffer): string {
+  // Extrai sequências de texto ASCII legível do buffer PDF.
+  // Funciona para PDFs baseados em texto (agendas, atas), que armazenam
+  // o conteúdo como ASCII puro nos streams internos do arquivo.
+  const raw = buffer.toString("latin1");
+  const partes = raw.match(/[\x21-\x7E]{2,}/g) || [];
+  return partes.join(" ");
+}
 
 async function textoDoArquivo(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
   const nome = file.name.toLowerCase();
   if (nome.endsWith(".pdf")) {
-    const pdfParse: (buf: Buffer) => Promise<{ text: string }> = nodeRequire("pdf-parse");
-    const data = await pdfParse(buffer);
-    return data.text;
+    return extrairTextoPdf(buffer);
   }
   if (nome.endsWith(".docx") || nome.endsWith(".doc")) {
     const result = await mammoth.extractRawText({ buffer });
