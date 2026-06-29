@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { createRequire } from "module";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 
-// eslint-disable-next-line no-eval
-const requireCjs: (m: string) => any = (0, eval)("require");
+const nodeRequire = createRequire(process.cwd() + "/package.json");
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
   try {
     if (nome.endsWith(".pdf")) {
-      const pdfParse: (buf: Buffer) => Promise<{ text: string }> = requireCjs("pdf-parse");
+      const pdfParse: (buf: Buffer) => Promise<{ text: string }> = nodeRequire("pdf-parse");
       const data = await pdfParse(buffer);
       texto = data.text;
     } else if (nome.endsWith(".docx") || nome.endsWith(".doc")) {
