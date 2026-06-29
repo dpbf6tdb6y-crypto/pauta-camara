@@ -202,7 +202,18 @@ export default function ImportarSeggovPage() {
           {/* Área de input */}
           {modo === 'texto' ? (
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Texto da Pauta</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Texto da Pauta</label>
+                {texto && (
+                  <button onClick={() => setTexto('')}
+                    className="text-xs text-gray-400 hover:text-red-600 transition flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Limpar
+                  </button>
+                )}
+              </div>
               <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={12}
                 placeholder={"Cole aqui o texto da pauta...\n\nExemplo:\n1. PL 2592/2026 - Dispõe sobre a criação de...\n2. REQ 45/2026 - Requerimento de informações sobre..."}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 resize-none font-mono" />
