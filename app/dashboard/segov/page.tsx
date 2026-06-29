@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 const TIPOS = ['PL', 'PLC', 'PDL', 'REQ', 'IND', 'MOC']
 const STATUS_LIST = ['Aguardando', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
@@ -16,16 +15,18 @@ const STATUS_COR: Record<string, string> = {
 }
 
 export default function SeggovPage() {
-  const router = useRouter()
   const [itens, setItens] = useState<any[]>([])
   const [vereadores, setVereadores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroVereador, setFiltroVereador] = useState('')
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+  const [excluindo, setExcluindo] = useState(false)
 
   async function carregar() {
     setLoading(true)
+    setSelecionados(new Set())
     const params = new URLSearchParams()
     if (filtroTipo) params.set('tipo', filtroTipo)
     if (filtroStatus) params.set('status', filtroStatus)
@@ -41,11 +42,38 @@ export default function SeggovPage() {
 
   useEffect(() => { carregar() }, [filtroTipo, filtroStatus, filtroVereador])
 
+  function toggleItem(id: string) {
+    setSelecionados(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleTodos() {
+    if (selecionados.size === itens.length) {
+      setSelecionados(new Set())
+    } else {
+      setSelecionados(new Set(itens.map(i => i.id)))
+    }
+  }
+
   async function excluir(id: string) {
     if (!confirm('Excluir este item?')) return
     await fetch(`/api/segov/${id}`, { method: 'DELETE' })
     carregar()
   }
+
+  async function excluirSelecionados() {
+    if (!confirm(`Excluir ${selecionados.size} item(s) selecionado(s)?`)) return
+    setExcluindo(true)
+    await Promise.all([...selecionados].map(id => fetch(`/api/segov/${id}`, { method: 'DELETE' })))
+    setExcluindo(false)
+    carregar()
+  }
+
+  const todosSelecionados = itens.length > 0 && selecionados.size === itens.length
+  const algunsSelecionados = selecionados.size > 0 && selecionados.size < itens.length
 
   return (
     <div className="space-y-5">
@@ -99,6 +127,35 @@ export default function SeggovPage() {
         )}
       </div>
 
+      {/* Barra de seleção */}
+      {selecionados.size > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span className="text-sm font-medium text-red-800">
+            {selecionados.size} {selecionados.size === 1 ? 'item selecionado' : 'itens selecionados'}
+          </span>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSelecionados(new Set())}
+              className="text-sm text-gray-500 hover:text-gray-700 transition">
+              Cancelar
+            </button>
+            <button onClick={excluirSelecionados} disabled={excluindo}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition disabled:opacity-60">
+              {excluindo ? (
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              )}
+              Excluir selecionados
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tabela */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
@@ -117,6 +174,13 @@ export default function SeggovPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="w-10 px-4 py-3">
+                  <input type="checkbox"
+                    checked={todosSelecionados}
+                    ref={el => { if (el) el.indeterminate = algunsSelecionados }}
+                    onChange={toggleTodos}
+                    className="w-4 h-4 accent-red-800 cursor-pointer" />
+                </th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Proposição</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Ementa</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Vereador</th>
@@ -126,38 +190,50 @@ export default function SeggovPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {itens.map((item: any) => (
-                <tr key={item.id} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-semibold text-gray-800 whitespace-nowrap">
-                    <span className="text-xs bg-red-100 text-red-800 rounded px-1.5 py-0.5 mr-1.5">{item.tipo}</span>
-                    {item.numero}/{item.ano}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{item.ementa}</td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{item.vereador?.nome || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                    {item.dataEnvio ? new Date(item.dataEnvio).toLocaleDateString('pt-BR') : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2 justify-end">
-                      <Link href={`/dashboard/segov/${item.id}/editar`}
-                        className="text-xs text-blue-600 hover:underline font-medium">Editar</Link>
-                      <button onClick={() => excluir(item.id)}
-                        className="text-xs text-red-500 hover:underline font-medium">Excluir</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {itens.map((item: any) => {
+                const sel = selecionados.has(item.id)
+                return (
+                  <tr key={item.id}
+                    onClick={() => toggleItem(item.id)}
+                    className={`transition cursor-pointer ${sel ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={sel} onChange={() => toggleItem(item.id)}
+                        className="w-4 h-4 accent-red-800 cursor-pointer" />
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-gray-800 whitespace-nowrap">
+                      <span className="text-xs bg-red-100 text-red-800 rounded px-1.5 py-0.5 mr-1.5">{item.tipo}</span>
+                      {item.numero}/{item.ano}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{item.ementa}</td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{item.vereador?.nome || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {item.dataEnvio ? new Date(item.dataEnvio).toLocaleDateString('pt-BR') : '—'}
+                    </td>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <div className="flex gap-2 justify-end">
+                        <Link href={`/dashboard/segov/${item.id}/editar`}
+                          className="text-xs text-blue-600 hover:underline font-medium">Editar</Link>
+                        <button onClick={() => excluir(item.id)}
+                          className="text-xs text-red-500 hover:underline font-medium">Excluir</button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
         {!loading && itens.length > 0 && (
           <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-400">
             {itens.length} {itens.length === 1 ? 'item' : 'itens'}
+            {selecionados.size > 0 && (
+              <span className="ml-2 text-red-600 font-medium">· {selecionados.size} selecionado(s)</span>
+            )}
           </div>
         )}
       </div>
