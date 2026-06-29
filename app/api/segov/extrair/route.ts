@@ -52,8 +52,12 @@ function extrairComRegex(texto: string): Proposicao[] {
 
     // Ementa: texto após "que " ou após " - " / " – "
     let ementa = "";
-    const emenMatch = afterMatch.match(/^[^\n\r]*(?:,\s*que\s+|[-–—:]\s*)([^\n\r]{5,250})/);
-    if (emenMatch) ementa = emenMatch[1].trim();
+    // Ementa: texto após "que " (ex: "autoria Vereador X, que Declara...") ou após " - "
+    // Captura até encontrar "* Encaminhar", próximo item numerado ou fim da seção
+    const emenMatch = afterMatch.match(
+      /(?:,\s*que\s+|[-–—:]\s*)([\s\S]{5,500}?)(?=\n\s*\*|\n\s*\d+\)|\n\s*[a-dA-D]\)|$)/i
+    );
+    if (emenMatch) ementa = emenMatch[1].replace(/\s+/g, " ").trim();
 
     // Andamento: "* Encaminhar à Comissão de ..."
     let observacao: string | undefined;
