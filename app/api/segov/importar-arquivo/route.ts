@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 
@@ -19,6 +18,7 @@ export async function POST(req: Request) {
 
   try {
     if (nome.endsWith(".pdf")) {
+      const pdfParse = (await import("pdf-parse")).default;
       const data = await pdfParse(buffer);
       texto = data.text;
     } else if (nome.endsWith(".docx") || nome.endsWith(".doc")) {

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 
@@ -8,6 +7,7 @@ async function textoDoArquivo(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
   const nome = file.name.toLowerCase();
   if (nome.endsWith(".pdf")) {
+    const pdfParse = (await import("pdf-parse")).default;
     const data = await pdfParse(buffer);
     return data.text;
   }
