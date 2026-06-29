@@ -17,6 +17,11 @@ type Proposicao = {
 const tipoLabel: Record<string, string> = {
   pl: "PL", resolucao: "Resolução", requerimento: "Requerimento", mocao: "Moção",
 };
+const tipoParaSegov: Record<string, string> = {
+  pl: "PL", resolucao: "PLC", requerimento: "REQ", mocao: "MOC",
+};
+const SEGOV_TIPOS = ["PL", "PLC", "PDL", "REQ", "IND", "MOC"];
+const SEGOV_STATUS = ["Aguardando", "Em análise", "Aprovado", "Rejeitado", "Arquivado", "Retirado"];
 const statusLabel: Record<string, string> = {
   em_tramitacao: "Em tramitação", aprovada: "Aprovada", rejeitada: "Rejeitada",
   arquivada: "Arquivada", aguardando_sancao: "Ag. Sanção",
@@ -193,6 +198,12 @@ export default function ProposicoesPage() {
   const [filtroPauta, setFiltroPauta] = useState<"" | "a_pautar" | "pautadas" | "votadas">("");
   const [idsNaPauta, setIdsNaPauta] = useState<Set<string>>(new Set());
 
+  const [modalSegov, setModalSegov] = useState(false);
+  const [propParaSegov, setPropParaSegov] = useState<Proposicao | null>(null);
+  const [segForm, setSegForm] = useState({ tipo: "PL", vereadorId: "", status: "Aguardando", observacao: "" });
+  const [enviandoSegov, setEnviandoSegov] = useState(false);
+  const [segSucesso, setSegSucesso] = useState("");
+
   async function carregar() {
     const params = new URLSearchParams();
     if (filtroTipo) params.set("tipo", filtroTipo);
@@ -365,6 +376,42 @@ export default function ProposicoesPage() {
     if (!confirm("Arquivar esta proposição?")) return;
     await fetch(`/api/proposicoes/${id}`, { method: "DELETE" });
     carregar();
+  }
+
+  function abrirModalSegov(p: Proposicao) {
+    setPropParaSegov(p);
+    setSegForm({
+      tipo: tipoParaSegov[p.tipo] || "PL",
+      vereadorId: p.autores?.[0]?.vereador?.id || "",
+      status: "Aguardando",
+      observacao: "",
+    });
+    setSegSucesso("");
+    setModalSegov(true);
+  }
+
+  async function confirmarEnvioSegov() {
+    if (!propParaSegov) return;
+    setEnviandoSegov(true);
+    const res = await fetch("/api/segov", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo: segForm.tipo,
+        numero: propParaSegov.numero,
+        ano: String(propParaSegov.ano),
+        ementa: propParaSegov.ementa,
+        vereadorId: segForm.vereadorId || null,
+        status: segForm.status,
+        observacao: segForm.observacao,
+      }),
+    });
+    setEnviandoSegov(false);
+    if (res.ok) {
+      setSegSucesso(`${segForm.tipo} ${propParaSegov.numero}/${propParaSegov.ano} registrado no SEGOV!`);
+    } else {
+      setSegSucesso("Erro ao enviar para o SEGOV. Verifique se já não está cadastrado.");
+    }
   }
 
   async function avancarEtapa(id: string, etapaAtual: string) {
@@ -550,6 +597,12 @@ export default function ProposicoesPage() {
                   className="px-3 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition">
                   Editar
                 </button>
+                <button onClick={() => abrirModalSegov(p)}
+                  className="px-3 py-1 rounded-lg text-xs font-semibold text-white hover:opacity-90 transition"
+                  style={{ background: "#6B21A8" }}
+                  title="Registrar no SEGOV">
+                  → SEGOV
+                </button>
                 {p.etapaAtual !== "protocolado" && p.status === "em_tramitacao" && (
                   <button onClick={() => retirarDePauta(p.id)}
                     className="px-3 py-1 rounded-lg text-xs font-medium bg-orange-50 text-orange-700 hover:bg-orange-100 transition">
@@ -687,6 +740,86 @@ export default function ProposicoesPage() {
             <div className="flex gap-3 mt-5">
               <button onClick={() => setVerProp(null)} className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50">Fechar</button>
               <button onClick={() => { setVerProp(null); abrirEditar(verProp); }} className="flex-1 bg-amber-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-amber-600">Editar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal enviar para SEGOV */}
+      {modalSegov && propParaSegov && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="font-bold text-lg text-gray-800">Registrar no SEGOV</h2>
+                <p className="text-sm text-gray-500">
+                  {tipoLabel[propParaSegov.tipo]} {propParaSegov.numero}/{propParaSegov.ano}
+                </p>
+              </div>
+              <button onClick={() => setModalSegov(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-600 italic">
+              {propParaSegov.ementa}
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tipo SEGOV</label>
+                  <select value={segForm.tipo} onChange={e => setSegForm({ ...segForm, tipo: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30">
+                    {SEGOV_TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</label>
+                  <select value={segForm.status} onChange={e => setSegForm({ ...segForm, status: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30">
+                    {SEGOV_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vereador responsável</label>
+                <select value={segForm.vereadorId} onChange={e => setSegForm({ ...segForm, vereadorId: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30">
+                  <option value="">— Selecione —</option>
+                  {vereadores.map((v: Vereador) => <option key={v.id} value={v.id}>{v.nome}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Observação</label>
+                <textarea rows={2} value={segForm.observacao} onChange={e => setSegForm({ ...segForm, observacao: e.target.value })}
+                  placeholder="Opcional..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 resize-none" />
+              </div>
+            </div>
+
+            {segSucesso && (
+              <div className={`mt-3 rounded-lg p-3 text-sm font-medium ${segSucesso.startsWith("Erro") ? "bg-red-50 text-red-700 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
+                {segSucesso.startsWith("Erro") ? "✗" : "✓"} {segSucesso}
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setModalSegov(false)}
+                className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50">
+                {segSucesso && !segSucesso.startsWith("Erro") ? "Fechar" : "Cancelar"}
+              </button>
+              {(!segSucesso || segSucesso.startsWith("Erro")) && (
+                <button onClick={confirmarEnvioSegov} disabled={enviandoSegov}
+                  className="flex-1 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-60 transition"
+                  style={{ background: "#6B21A8" }}>
+                  {enviandoSegov ? "Enviando..." : "Registrar no SEGOV"}
+                </button>
+              )}
             </div>
           </div>
         </div>
