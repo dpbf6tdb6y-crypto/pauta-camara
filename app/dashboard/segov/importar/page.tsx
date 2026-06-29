@@ -13,6 +13,8 @@ type ItemExtraido = {
   ementa: string
   jaExiste: boolean
   incluir: boolean
+  observacao?: string
+  dataEnvio?: string
 }
 
 const MODOS: { id: Modo; label: string; accept: string; ext: string }[] = [
@@ -73,6 +75,7 @@ export default function ImportarSeggovPage() {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [itens, setItens] = useState<ItemExtraido[]>([])
+  const [dataEnvio, setDataEnvio] = useState<string | undefined>(undefined)
   const [resultado, setResultado] = useState<{ criados: number; erros: number } | null>(null)
 
   function trocarModo(m: Modo) {
@@ -114,6 +117,7 @@ export default function ImportarSeggovPage() {
         return
       }
 
+      setDataEnvio(data.dataEnvio)
       setItens(data.proposicoes.map((p: any) => ({
         ...p,
         incluir: !p.jaExiste,
@@ -145,7 +149,12 @@ export default function ImportarSeggovPage() {
     const res = await fetch('/api/segov/criar-lote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itens: paraCadastrar }),
+      body: JSON.stringify({
+        itens: paraCadastrar.map(it => ({
+          ...it,
+          dataEnvio: it.dataEnvio ?? dataEnvio,
+        })),
+      }),
     })
     const data = await res.json()
     setResultado(data)
@@ -261,9 +270,14 @@ export default function ImportarSeggovPage() {
             <div>
               <p className="font-semibold text-gray-800">
                 {itens.length} proposição(ões) encontrada(s)
+                {dataEnvio && (
+                  <span className="ml-2 text-sm font-normal text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                    Sessão de {new Date(dataEnvio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </span>
+                )}
               </p>
               <p className="text-sm text-gray-500">
-                {paraCadastrar.length} nova(s) para cadastrar
+                {paraCadastrar.length} nova(s) para cadastrar · seção &quot;Apresentação de proposições&quot;
                 {itens.filter(it => it.jaExiste).length > 0 && (
                   <span className="ml-2 text-amber-600">
                     · {itens.filter(it => it.jaExiste).length} já cadastrada(s) no SEGOV
@@ -342,6 +356,14 @@ export default function ImportarSeggovPage() {
                         disabled={item.jaExiste}
                         className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-800/30 disabled:bg-gray-50 disabled:text-gray-400"
                       />
+                      {item.observacao && (
+                        <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                          {item.observacao}
+                        </p>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       <button onClick={() => removerLinha(idx)} title="Remover linha"
@@ -376,7 +398,7 @@ export default function ImportarSeggovPage() {
             )}
           </div>
           <div className="flex justify-center gap-3 pt-2">
-            <button onClick={() => { setEtapa('upload'); setItens([]); setArquivo(null); setTexto(''); setResultado(null) }}
+            <button onClick={() => { setEtapa('upload'); setItens([]); setArquivo(null); setTexto(''); setResultado(null); setDataEnvio(undefined) }}
               className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
               Nova Importação
             </button>

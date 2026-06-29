@@ -20,6 +20,8 @@ export async function POST(req: Request) {
           ementa: item.ementa?.trim() || "(sem ementa)",
           vereadorId: item.vereadorId || null,
           status: "Aguardando",
+          observacao: item.observacao || null,
+          dataEnvio: item.dataEnvio ? new Date(item.dataEnvio) : null,
         },
       });
       criados++;
