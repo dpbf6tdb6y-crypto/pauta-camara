@@ -3,11 +3,15 @@ import { prisma } from "@/lib/prisma";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 
+// Usa eval para evitar que o webpack do Next.js tente fazer bundle do pdf-parse (módulo CJS)
+// eslint-disable-next-line no-eval
+const requireCjs: (m: string) => any = (0, eval)("require");
+
 async function textoDoArquivo(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
   const nome = file.name.toLowerCase();
   if (nome.endsWith(".pdf")) {
-    const pdfParse = (await import("pdf-parse")).default;
+    const pdfParse: (buf: Buffer) => Promise<{ text: string }> = requireCjs("pdf-parse");
     const data = await pdfParse(buffer);
     return data.text;
   }

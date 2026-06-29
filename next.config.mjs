@@ -6,8 +6,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['pdf-parse'],
+  webpack: (config, { isServer }) => {
+    if (isServer && Array.isArray(config.externals)) {
+      config.externals.push('pdf-parse');
+    }
+    return config;
   },
 };
 

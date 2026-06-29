@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
 
+// eslint-disable-next-line no-eval
+const requireCjs: (m: string) => any = (0, eval)("require");
+
 export async function POST(req: Request) {
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
@@ -18,7 +21,7 @@ export async function POST(req: Request) {
 
   try {
     if (nome.endsWith(".pdf")) {
-      const pdfParse = (await import("pdf-parse")).default;
+      const pdfParse: (buf: Buffer) => Promise<{ text: string }> = requireCjs("pdf-parse");
       const data = await pdfParse(buffer);
       texto = data.text;
     } else if (nome.endsWith(".docx") || nome.endsWith(".doc")) {
