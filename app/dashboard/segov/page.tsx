@@ -194,7 +194,7 @@ export default function SeggovPage() {
       )}
 
       {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-260px)]">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-175px)]">
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <div className="w-8 h-8 border-4 border-red-800 border-t-transparent rounded-full animate-spin" />
