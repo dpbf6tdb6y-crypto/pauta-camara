@@ -210,7 +210,9 @@ export default function SeggovPage() {
                     <td className="px-4 py-3 text-gray-600 text-justify">{item.ementa}</td>
                     <td className="px-4 py-3">
                       {item.vereador?.nome
-                        ? <span className="text-gray-600">{item.vereador.nome}</span>
+                        ? <span className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded whitespace-nowrap">
+                            {item.vereador.nome}
+                          </span>
                         : item.autorNome
                           ? <div className="flex flex-col gap-1">
                               {item.autorNome.split(/\s+e\s+|,\s+/).map((nome: string, i: number) => (
