@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { exportarSegovExcel, exportarSegovPDF, COLUNAS_RELATORIO, type ColunasKey } from '@/lib/segov-export'
@@ -80,7 +80,7 @@ export default function SeggovPage() {
     carregar()
   }
 
-  const itensExibidos = itens.filter(item => {
+  const itensExibidos = useMemo(() => itens.filter(item => {
     if (colProposicao) {
       const ref = `${item.tipo} ${item.numero}/${item.ano}`.toLowerCase()
       if (!ref.includes(colProposicao.toLowerCase())) return false
@@ -96,7 +96,7 @@ export default function SeggovPage() {
     }
     if (colStatus && item.status !== colStatus) return false
     return true
-  })
+  }), [itens, colProposicao, colEmenta, colVereador, colComissao, colStatus])
 
   const filtrosColunaAtivos = colProposicao || colEmenta || colVereador || colComissao || colStatus
 
