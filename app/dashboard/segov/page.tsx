@@ -184,8 +184,9 @@ export default function SeggovPage() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Proposição</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Ementa</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Vereador</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Comissão</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Data Envio</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Pauta</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -213,12 +214,18 @@ export default function SeggovPage() {
                           : <span className="text-gray-400">—</span>
                       }
                     </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs max-w-[200px]">
+                      {item.observacao
+                        ? <span title={item.observacao} className="line-clamp-2">{item.observacao}</span>
+                        : <span className="text-gray-300">—</span>
+                      }
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
                       {item.dataEnvio ? new Date(item.dataEnvio).toLocaleDateString('pt-BR') : '—'}
                     </td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
