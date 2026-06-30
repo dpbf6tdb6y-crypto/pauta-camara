@@ -25,6 +25,13 @@ export default function SeggovPage() {
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [excluindo, setExcluindo] = useState(false)
 
+  // Filtros por coluna (busca livre, aplicados sobre os itens já carregados)
+  const [colProposicao, setColProposicao] = useState('')
+  const [colEmenta, setColEmenta] = useState('')
+  const [colVereador, setColVereador] = useState('')
+  const [colComissao, setColComissao] = useState('')
+  const [colStatus, setColStatus] = useState('')
+
   async function carregar() {
     setLoading(true)
     setSelecionados(new Set())
@@ -52,10 +59,14 @@ export default function SeggovPage() {
   }
 
   function toggleTodos() {
-    if (selecionados.size === itens.length) {
-      setSelecionados(new Set())
+    if (todosSelecionados) {
+      setSelecionados(prev => {
+        const next = new Set(prev)
+        itensExibidos.forEach(i => next.delete(i.id))
+        return next
+      })
     } else {
-      setSelecionados(new Set(itens.map(i => i.id)))
+      setSelecionados(prev => new Set([...prev, ...itensExibidos.map(i => i.id)]))
     }
   }
 
@@ -73,8 +84,32 @@ export default function SeggovPage() {
     carregar()
   }
 
-  const todosSelecionados = itens.length > 0 && selecionados.size === itens.length
-  const algunsSelecionados = selecionados.size > 0 && selecionados.size < itens.length
+  const itensExibidos = itens.filter(item => {
+    if (colProposicao) {
+      const ref = `${item.tipo} ${item.numero}/${item.ano}`.toLowerCase()
+      if (!ref.includes(colProposicao.toLowerCase())) return false
+    }
+    if (colEmenta && !(item.ementa || '').toLowerCase().includes(colEmenta.toLowerCase())) return false
+    if (colVereador) {
+      const nome = (item.vereador?.nome || item.autorNome || '').toLowerCase()
+      if (!nome.includes(colVereador.toLowerCase())) return false
+    }
+    if (colComissao) {
+      const texto = [item.observacao, item.parecerComissao, item.proxComissao].filter(Boolean).join(' ').toLowerCase()
+      if (!texto.includes(colComissao.toLowerCase())) return false
+    }
+    if (colStatus && item.status !== colStatus) return false
+    return true
+  })
+
+  const filtrosColunaAtivos = colProposicao || colEmenta || colVereador || colComissao || colStatus
+
+  function limparFiltrosColuna() {
+    setColProposicao(''); setColEmenta(''); setColVereador(''); setColComissao(''); setColStatus('')
+  }
+
+  const todosSelecionados = itensExibidos.length > 0 && itensExibidos.every(i => selecionados.has(i.id))
+  const algunsSelecionados = itensExibidos.some(i => selecionados.has(i.id)) && !todosSelecionados
 
   return (
     <div className="space-y-5">
@@ -191,9 +226,59 @@ export default function SeggovPage() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Última mov.</th>
                 <th className="px-4 py-3 w-16" />
               </tr>
+              <tr className="border-b border-gray-100 bg-gray-50/70 sticky top-[45px] z-10">
+                <th className="px-4 py-2">
+                  {filtrosColunaAtivos && (
+                    <button onClick={limparFiltrosColuna} title="Limpar filtros de coluna"
+                      className="text-gray-400 hover:text-red-600 transition">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </th>
+                <th className="px-4 py-2">
+                  <input value={colProposicao} onChange={e => setColProposicao(e.target.value)}
+                    placeholder="Buscar nº..."
+                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30" />
+                </th>
+                <th className="px-4 py-2">
+                  <input value={colEmenta} onChange={e => setColEmenta(e.target.value)}
+                    placeholder="Buscar palavra ou frase na ementa..."
+                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30" />
+                </th>
+                <th className="px-4 py-2">
+                  <input value={colVereador} onChange={e => setColVereador(e.target.value)}
+                    placeholder="Buscar nome..."
+                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30" />
+                </th>
+                <th className="px-4 py-2">
+                  <input value={colComissao} onChange={e => setColComissao(e.target.value)}
+                    placeholder="Buscar comissão..."
+                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30" />
+                </th>
+                <th className="px-4 py-2">
+                  <select value={colStatus} onChange={e => setColStatus(e.target.value)}
+                    className="w-full border border-gray-200 rounded px-1 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30">
+                    <option value="">Todos</option>
+                    {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </th>
+                <th className="px-4 py-2" />
+                <th className="px-4 py-2" />
+                <th className="px-4 py-2" />
+              </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {itens.map((item: any) => {
+              {itensExibidos.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="px-4 py-10 text-center text-gray-400 text-sm">
+                    Nenhum item corresponde aos filtros de coluna.{' '}
+                    <button onClick={limparFiltrosColuna} className="text-red-700 hover:underline">Limpar filtros</button>
+                  </td>
+                </tr>
+              )}
+              {itensExibidos.map((item: any) => {
                 const sel = selecionados.has(item.id)
                 return (
                   <tr key={item.id}
@@ -272,7 +357,10 @@ export default function SeggovPage() {
         )}
         {!loading && itens.length > 0 && (
           <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-400">
-            {itens.length} {itens.length === 1 ? 'item' : 'itens'}
+            {itensExibidos.length} {itensExibidos.length === 1 ? 'item' : 'itens'}
+            {filtrosColunaAtivos && itensExibidos.length !== itens.length && (
+              <span className="ml-1">de {itens.length}</span>
+            )}
             {selecionados.size > 0 && (
               <span className="ml-2 text-red-600 font-medium">· {selecionados.size} selecionado(s)</span>
             )}
