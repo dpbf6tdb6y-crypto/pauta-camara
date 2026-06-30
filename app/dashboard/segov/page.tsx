@@ -207,7 +207,7 @@ export default function SeggovPage() {
                       <span className="text-xs bg-red-100 text-red-800 rounded px-1.5 py-0.5 mr-1.5">{item.tipo}</span>
                       {item.numero}/{item.ano}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{item.ementa}</td>
+                    <td className="px-4 py-3 text-gray-600 text-justify">{item.ementa}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {item.vereador?.nome
                         ? <span className="text-gray-600">{item.vereador.nome}</span>
