@@ -192,7 +192,7 @@ export default function SeggovPage() {
             <p className="text-sm mt-1">Cadastre um novo item ou ajuste os filtros</p>
           </div>
         ) : (
-          <table className="w-full min-w-[1400px] text-sm">
+          <table className="w-full min-w-[1400px] text-sm border-separate border-spacing-y-0.5">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
                 <th className="w-10 px-4 py-3">
@@ -253,7 +253,7 @@ export default function SeggovPage() {
                 <th className="px-4 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody>
               {itensExibidos.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-gray-400 text-sm">
@@ -267,7 +267,7 @@ export default function SeggovPage() {
                 return (
                   <tr key={item.id}
                     onClick={() => router.push(`/dashboard/segov/${item.id}/editar`)}
-                    className={`transition cursor-pointer ${sel ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
+                    className={`transition cursor-pointer ring-1 ${sel ? 'bg-red-50 ring-green-400' : 'ring-green-200 hover:ring-green-400 hover:bg-gray-50'}`}>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       <input type="checkbox" checked={sel} onChange={() => toggleItem(item.id)}
                         className="w-4 h-4 accent-red-800 cursor-pointer" />
