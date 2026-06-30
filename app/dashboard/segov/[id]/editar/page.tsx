@@ -65,17 +65,20 @@ export default function EditarSeggovPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard/segov" className="text-gray-400 hover:text-gray-600 transition">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="max-w-4xl mx-auto space-y-5">
+      <div className="flex items-center">
+        <Link href="/dashboard/segov"
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition w-24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
+          Voltar
         </Link>
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">Editar SEGOV</h1>
+        <div className="flex-1 text-center">
+          <h1 className="text-xl font-bold text-gray-800">Editar</h1>
           <p className="text-sm text-gray-500">{form.tipo} {form.numero}/{form.ano}</p>
         </div>
+        <div className="w-24" />
       </div>
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
