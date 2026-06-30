@@ -14,6 +14,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       autorNome: body.autorNome || null,
       status: body.status,
       dataEnvio: body.dataEnvio ? new Date(body.dataEnvio) : null,
+      observacao: body.observacao || null,
+      parecerComissao: body.parecerComissao || null,
+      proxComissao: body.proxComissao || null,
     },
     include: { vereador: true },
   });

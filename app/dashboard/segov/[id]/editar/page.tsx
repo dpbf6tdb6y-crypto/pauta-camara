@@ -9,8 +9,12 @@ const STATUS_LIST = ['Aguardando', 'Com Parecer', 'Em análise', 'Aprovado', 'Re
 type Autor = { id?: string; nome: string; isPE: boolean }
 
 function formatNumero(n: string) {
-  const digits = n.replace(/\D/g, '')
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return n.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+function fmtData(iso?: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('pt-BR')
 }
 
 export default function EditarSeggovPage() {
@@ -19,12 +23,13 @@ export default function EditarSeggovPage() {
   const [vereadores, setVereadores] = useState<any[]>([])
   const [salvando, setSalvando] = useState(false)
   const [carregando, setCarregando] = useState(true)
+  const [updatedAt, setUpdatedAt] = useState<string>('')
   const [form, setForm] = useState({
     numero: '', ano: String(new Date().getFullYear()), tipo: 'PL',
     ementa: '', status: 'Aguardando', dataEnvio: '',
+    observacao: '', parecerComissao: '', proxComissao: '',
   })
   const [autores, setAutores] = useState<Autor[]>([])
-  const [autorInput, setAutorInput] = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -34,6 +39,7 @@ export default function EditarSeggovPage() {
       setVereadores(vers)
       const item = todos.find((i: any) => i.id === id)
       if (item) {
+        setUpdatedAt(item.updatedAt || '')
         setForm({
           numero: item.numero,
           ano: String(item.ano),
@@ -41,9 +47,11 @@ export default function EditarSeggovPage() {
           ementa: item.ementa,
           status: item.status,
           dataEnvio: item.dataEnvio ? item.dataEnvio.split('T')[0] : '',
+          observacao: item.observacao || '',
+          parecerComissao: item.parecerComissao || '',
+          proxComissao: item.proxComissao || '',
         })
 
-        // Monta lista de autores a partir dos dados do item
         const lista: Autor[] = []
         const nomeRaw: string = item.autorNome || ''
         if (item.vereadorId) {
@@ -51,24 +59,20 @@ export default function EditarSeggovPage() {
           if (v) lista.push({ id: v.id, nome: v.nome, isPE: false })
         }
         if (nomeRaw) {
-          const nomes = nomeRaw.split(/\s+e\s+|,\s+/).map((n: string) => n.trim()).filter(Boolean)
-          for (const nome of nomes) {
+          nomeRaw.split(/\s+e\s+|,\s+/).map((n: string) => n.trim()).filter(Boolean).forEach((nome: string) => {
             const lower = nome.toLowerCase()
             if (lower.includes('executivo') || lower.includes('prefeitura')) {
               if (!lista.some(a => a.isPE)) lista.push({ nome: 'Poder Executivo', isPE: true })
             } else {
-              // tenta match com vereador se ainda não adicionado
-              const matched = vers.find((v: any) => {
-                const nV = v.nome.toLowerCase()
-                return nome.toLowerCase().split(/\s+/).filter((p: string) => p.length > 2).some((p: string) => nV.includes(p))
-              })
-              if (matched && !lista.some(a => a.id === matched.id)) {
+              const matched = vers.find((v: any) =>
+                nome.toLowerCase().split(/\s+/).filter((p: string) => p.length > 2).some((p: string) => v.nome.toLowerCase().includes(p))
+              )
+              if (matched && !lista.some(a => a.id === matched.id))
                 lista.push({ id: matched.id, nome: matched.nome, isPE: false })
-              } else if (!matched && !lista.some(a => a.nome === nome)) {
+              else if (!matched && !lista.some(a => a.nome === nome))
                 lista.push({ nome, isPE: false })
-              }
             }
-          }
+          })
         }
         setAutores(lista)
       }
@@ -82,7 +86,6 @@ export default function EditarSeggovPage() {
 
   function adicionarAutor(valor: string) {
     if (!valor) return
-    setAutorInput('')
     if (valor === 'executivo') {
       if (!autores.some(a => a.isPE))
         setAutores(prev => [...prev, { nome: 'Poder Executivo', isPE: true }])
@@ -119,8 +122,10 @@ export default function EditarSeggovPage() {
     )
   }
 
+  const inp = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30"
+
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-5">
       <div className="flex items-center">
         <Link href="/dashboard/segov"
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition w-24">
@@ -136,51 +141,59 @@ export default function EditarSeggovPage() {
         <div className="w-24" />
       </div>
 
-      <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        {/* Linha 1: Número | Ano | Tipo | Status */}
-        <div className="grid grid-cols-5 gap-4">
+      <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+
+        {/* Linha 1: Número | Ano | Tipo | Status | Data Envio | Última Mov (read-only) */}
+        <div className="grid grid-cols-6 gap-3">
           <div className="col-span-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Número</label>
-            <input required
-              value={formatNumero(form.numero)}
+            <input required value={formatNumero(form.numero)}
               onChange={e => set('numero', e.target.value.replace(/\./g, ''))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
+              className={inp} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ano</label>
-            <input value={form.ano} onChange={e => set('ano', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
+            <input value={form.ano} onChange={e => set('ano', e.target.value)} className={inp} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tipo</label>
-            <select required value={form.tipo} onChange={e => set('tipo', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+            <select required value={form.tipo} onChange={e => set('tipo', e.target.value)} className={inp}>
               {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</label>
-            <select value={form.status} onChange={e => set('status', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+            <select value={form.status} onChange={e => set('status', e.target.value)} className={inp}>
               {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data Envio</label>
+            <input type="date" value={form.dataEnvio} onChange={e => set('dataEnvio', e.target.value)} className={inp} />
+          </div>
         </div>
+
+        {/* Última Movimentação (read-only) */}
+        {updatedAt && (
+          <div className="text-xs text-gray-400">
+            Última movimentação: <span className="font-medium text-gray-600">{fmtData(updatedAt)}</span>
+          </div>
+        )}
 
         {/* Ementa */}
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ementa</label>
           <textarea required rows={6} value={form.ementa} onChange={e => set('ementa', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 resize-none" />
+            className={`${inp} resize-none`} />
         </div>
 
-        {/* Autor */}
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor</label>
-          <div className="flex gap-2 items-start">
-            <select value={autorInput}
-              onChange={e => { adicionarAutor(e.target.value); setAutorInput('') }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+        {/* Autor + Movimentação lado a lado */}
+        <div className="grid grid-cols-2 gap-6">
+
+          {/* Autor */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Autor</label>
+            <select onChange={e => { adicionarAutor(e.target.value); e.target.value = '' }} className={inp}>
               <option value="">— Selecionar autor —</option>
               <option value="executivo">⚡ Poder Executivo</option>
               <optgroup label="Vereadores">
@@ -188,7 +201,7 @@ export default function EditarSeggovPage() {
               </optgroup>
             </select>
             {autores.length > 0 && (
-              <div className="flex flex-wrap gap-2 flex-1">
+              <div className="flex flex-wrap gap-2 mt-2">
                 {autores.map((a, i) => (
                   <span key={i}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
@@ -196,10 +209,10 @@ export default function EditarSeggovPage() {
                         ? 'bg-orange-100 text-orange-800 border border-orange-200'
                         : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                     }`}>
-                    {a.isPE && <span className="text-orange-500">⚡</span>}
+                    {a.isPE && <span>⚡</span>}
                     {a.nome}
                     <button type="button" onClick={() => removerAutor(i)}
-                      className="ml-0.5 text-gray-400 hover:text-red-500 transition">
+                      className="text-gray-400 hover:text-red-500 transition">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
@@ -209,18 +222,34 @@ export default function EditarSeggovPage() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Data de Envio */}
-        <div className="w-48">
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data de Entrada</label>
-          <input type="date" value={form.dataEnvio} onChange={e => set('dataEnvio', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
+          {/* Movimentação */}
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Movimentação</label>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Encaminhado à comissão</label>
+              <input value={form.observacao} onChange={e => set('observacao', e.target.value)}
+                placeholder="ex: Comissão de Legislação e Justiça"
+                className={inp} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Parecer emitido por</label>
+              <input value={form.parecerComissao} onChange={e => set('parecerComissao', e.target.value)}
+                placeholder="ex: Comissão de Legislação e Justiça"
+                className={inp} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Encaminhado para votação / próxima comissão</label>
+              <input value={form.proxComissao} onChange={e => set('proxComissao', e.target.value)}
+                placeholder="ex: Comissão de Orçamento ou Plenário"
+                className={inp} />
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
           <Link href="/dashboard/segov"
-            className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+            className="px-5 py-2.5 rounded-lg text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
             Cancelar
           </Link>
           <button type="submit" disabled={salvando}
