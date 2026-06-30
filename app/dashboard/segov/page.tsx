@@ -187,7 +187,8 @@ export default function SeggovPage() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Vereador</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Comissão</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Pauta</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Entrada</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Última movimentação</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -243,6 +244,9 @@ export default function SeggovPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
                       {item.dataEnvio ? new Date(item.dataEnvio).toLocaleDateString('pt-BR') : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs">
+                      {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('pt-BR') : '—'}
                     </td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       <div className="flex gap-2 justify-end">
