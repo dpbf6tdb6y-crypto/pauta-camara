@@ -82,7 +82,7 @@ export default function EditarSeggovPage() {
       </div>
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <div className="col-span-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Número</label>
             <input required value={form.numero} onChange={e => set('numero', e.target.value)}
@@ -93,9 +93,6 @@ export default function EditarSeggovPage() {
             <input value={form.ano} onChange={e => set('ano', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tipo</label>
             <select required value={form.tipo} onChange={e => set('tipo', e.target.value)}
