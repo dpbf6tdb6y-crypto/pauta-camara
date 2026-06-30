@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { exportarSegovExcel, exportarSegovPDF } from '@/lib/segov-export'
 
-const TIPOS = ['PL', 'PLC', 'PDL', 'REQ', 'IND', 'MOC']
 const STATUS_LIST = ['Aguardando', 'Com Parecer', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
 
 const STATUS_COR: Record<string, string> = {
@@ -20,9 +19,6 @@ export default function SeggovPage() {
   const [itens, setItens] = useState<any[]>([])
   const [vereadores, setVereadores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [filtroTipo, setFiltroTipo] = useState('')
-  const [filtroStatus, setFiltroStatus] = useState('')
-  const [filtroVereador, setFiltroVereador] = useState('')
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [excluindo, setExcluindo] = useState(false)
   const [menuRelatorios, setMenuRelatorios] = useState(false)
@@ -37,20 +33,15 @@ export default function SeggovPage() {
   async function carregar() {
     setLoading(true)
     setSelecionados(new Set())
-    const params = new URLSearchParams()
-    if (filtroTipo) params.set('tipo', filtroTipo)
-    if (filtroStatus) params.set('status', filtroStatus)
-    if (filtroVereador) params.set('vereadorId', filtroVereador)
-    const res = await fetch(`/api/segov?${params}`)
+    const res = await fetch('/api/segov')
     setItens(await res.json())
     setLoading(false)
   }
 
   useEffect(() => {
     fetch('/api/vereadores').then(r => r.json()).then(setVereadores)
+    carregar()
   }, [])
-
-  useEffect(() => { carregar() }, [filtroTipo, filtroStatus, filtroVereador])
 
   function toggleItem(id: string) {
     setSelecionados(prev => {
@@ -171,31 +162,6 @@ export default function SeggovPage() {
             Nova SEGOV
           </Link>
         </div>
-      </div>
-
-      {/* Filtros */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3">
-        <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
-          <option value="">Todos os tipos</option>
-          {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
-          <option value="">Todos os status</option>
-          {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={filtroVereador} onChange={e => setFiltroVereador(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
-          <option value="">Todos os vereadores</option>
-          {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
-        </select>
-        {(filtroTipo || filtroStatus || filtroVereador) && (
-          <button onClick={() => { setFiltroTipo(''); setFiltroStatus(''); setFiltroVereador('') }}
-            className="text-sm text-red-700 hover:underline">
-            Limpar filtros
-          </button>
-        )}
       </div>
 
       {/* Barra de seleção */}
