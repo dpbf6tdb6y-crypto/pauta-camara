@@ -130,7 +130,7 @@ export default function SeggovPage() {
             + Nova Proposição
           </Link>
           <Link href="/dashboard/segov/importar"
-            className={`${btn} border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300`}>
+            className={`${btn} text-white bg-green-600 hover:bg-green-700`}>
             Importar Pauta
           </Link>
           <button onClick={() => setModalRelatorio(true)}
