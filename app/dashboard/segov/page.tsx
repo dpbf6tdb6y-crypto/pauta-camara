@@ -72,12 +72,6 @@ export default function SeggovPage() {
     }
   }
 
-  async function excluir(id: string) {
-    if (!confirm('Excluir este item?')) return
-    await fetch(`/api/segov/${id}`, { method: 'DELETE' })
-    carregar()
-  }
-
   async function excluirSelecionados() {
     if (!confirm(`Excluir ${selecionados.size} item(s) selecionado(s)?`)) return
     setExcluindo(true)
@@ -215,7 +209,6 @@ export default function SeggovPage() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Status</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 w-24">Entrada</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Última mov.</th>
-                <th className="px-4 py-3 w-16" />
               </tr>
               <tr className="border-b border-gray-100 bg-gray-50/70 sticky top-[45px] z-10">
                 <th className="px-4 py-2">
@@ -263,7 +256,7 @@ export default function SeggovPage() {
             <tbody className="divide-y divide-gray-50">
               {itensExibidos.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-gray-400 text-sm">
+                  <td colSpan={8} className="px-4 py-10 text-center text-gray-400 text-sm">
                     Nenhum item corresponde aos filtros de coluna.{' '}
                     <button onClick={limparFiltrosColuna} className="text-red-700 hover:underline">Limpar filtros</button>
                   </td>
@@ -331,14 +324,6 @@ export default function SeggovPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs">
                       {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('pt-BR') : '—'}
-                    </td>
-                    <td className="px-3 py-3 w-16" onClick={e => e.stopPropagation()}>
-                      <div className="flex flex-col items-end gap-1">
-                        <Link href={`/dashboard/segov/${item.id}/editar`}
-                          className="text-xs text-blue-600 hover:underline font-medium">Editar</Link>
-                        <button onClick={() => excluir(item.id)}
-                          className="text-xs text-red-500 hover:underline font-medium">Excluir</button>
-                      </div>
                     </td>
                   </tr>
                 )
