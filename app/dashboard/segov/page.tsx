@@ -129,14 +129,14 @@ export default function SeggovPage() {
             style={{ background: '#8B0000' }}>
             + Nova Proposição
           </Link>
-          <button onClick={() => setModalRelatorio(true)}
-            className={`${btn} text-white bg-blue-600 hover:bg-blue-700`}>
-            {selecionados.size > 0 ? `Relatório (${selecionados.size} selecionado${selecionados.size > 1 ? 's' : ''})` : 'Relatórios'}
-          </button>
           <Link href="/dashboard/segov/importar"
             className={`${btn} border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300`}>
             Importar Pauta
           </Link>
+          <button onClick={() => setModalRelatorio(true)}
+            className={`${btn} text-white bg-blue-600 hover:bg-blue-700`}>
+            {selecionados.size > 0 ? `Relatório (${selecionados.size} selecionado${selecionados.size > 1 ? 's' : ''})` : 'Relatórios'}
+          </button>
         </div>
       </div>
     )
@@ -151,7 +151,7 @@ export default function SeggovPage() {
     }
     setRightContent(
       <button onClick={excluirSelecionados} disabled={excluindo}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-normal leading-5 text-white bg-red-600 hover:bg-red-700 transition disabled:opacity-60">
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-normal leading-5 text-white bg-red-400 hover:bg-red-500 transition disabled:opacity-60">
         {excluindo
           ? <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
           : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
