@@ -105,11 +105,12 @@ export default function SeggovPage() {
   const algunsSelecionados = itensExibidos.some(i => selecionados.has(i.id)) && !todosSelecionados
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Header — uma única linha compacta */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">SEGOV</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-bold text-gray-800">SEGOV</h1>
+          <span className="text-gray-300">|</span>
           <p className="text-sm text-gray-500">Secretaria de Governo — proposições e status</p>
         </div>
         <div className="flex gap-2">
@@ -194,7 +195,7 @@ export default function SeggovPage() {
       )}
 
       {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-175px)]">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-135px)]">
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <div className="w-8 h-8 border-4 border-red-800 border-t-transparent rounded-full animate-spin" />
