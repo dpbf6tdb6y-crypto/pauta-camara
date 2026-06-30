@@ -185,7 +185,7 @@ export default function SeggovPage() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Proposição</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Ementa</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Vereador</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Comissão</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-64">Comissão</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Entrada</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Última movimentação</th>
@@ -216,9 +216,9 @@ export default function SeggovPage() {
                           : <span className="text-gray-400">—</span>
                       }
                     </td>
-                    <td className="px-4 py-3 text-xs max-w-[220px] space-y-1">
+                    <td className="px-4 py-3 text-xs w-64 space-y-1">
                       {item.observacao && (
-                        <div title={item.observacao} className="text-gray-500 line-clamp-1">{item.observacao}</div>
+                        <div title={item.observacao} className="text-gray-500">{item.observacao}</div>
                       )}
                       {item.parecerComissao && (
                         <div className="flex items-center gap-1 flex-wrap">
@@ -248,8 +248,8 @@ export default function SeggovPage() {
                     <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs">
                       {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('pt-BR') : '—'}
                     </td>
-                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      <div className="flex gap-2 justify-end">
+                    <td className="px-3 py-3 w-16" onClick={e => e.stopPropagation()}>
+                      <div className="flex flex-col items-end gap-1">
                         <Link href={`/dashboard/segov/${item.id}/editar`}
                           className="text-xs text-blue-600 hover:underline font-medium">Editar</Link>
                         <button onClick={() => excluir(item.id)}
