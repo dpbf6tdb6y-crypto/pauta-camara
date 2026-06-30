@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { exportarSegovExcel, exportarSegovPDF } from '@/lib/segov-export'
+import { useTopbar } from '@/contexts/topbar'
 
 const STATUS_LIST = ['Aguardando', 'Com Parecer', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
 
@@ -16,6 +17,7 @@ const STATUS_COR: Record<string, string> = {
 }
 
 export default function SeggovPage() {
+  const { setLeftContent } = useTopbar()
   const [itens, setItens] = useState<any[]>([])
   const [vereadores, setVereadores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,22 +106,26 @@ export default function SeggovPage() {
   const todosSelecionados = itensExibidos.length > 0 && itensExibidos.every(i => selecionados.has(i.id))
   const algunsSelecionados = itensExibidos.some(i => selecionados.has(i.id)) && !todosSelecionados
 
-  return (
-    <div className="space-y-3">
-      {/* Header — uma única linha compacta */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold text-gray-800">SEGOV</h1>
+  // Injeta título + botões no topbar global
+  useEffect(() => {
+    setLeftContent(
+      <div className="flex items-center justify-between w-full pr-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-gray-800">SEGOV</span>
           <span className="text-gray-300">|</span>
-          <p className="text-sm text-gray-500">Secretaria de Governo — proposições e status</p>
+          <span className="text-xs text-gray-500">Secretaria de Governo — proposições e status</span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {/* Nova SEGOV */}
+          <Link href="/dashboard/segov/novo"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition"
+            style={{ background: '#8B0000' }}>
+            + Nova SEGOV
+          </Link>
+          {/* Relatórios */}
           <div className="relative">
             <button onClick={() => setMenuRelatorios(v => !v)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6h6v6m-9 4h12a2 2 0 002-2V7.414a1 1 0 00-.293-.707l-3.414-3.414A1 1 0 0015.586 3H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
               Relatórios
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -128,42 +134,32 @@ export default function SeggovPage() {
             {menuRelatorios && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuRelatorios(false)} />
-                <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                <div className="absolute left-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
                   <button onClick={() => { exportarSegovExcel(itensExibidos, 'segov.xlsx'); setMenuRelatorios(false) }}
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition text-left">
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M3 3h18v18H3V3z" />
-                    </svg>
                     Exportar Excel ({itensExibidos.length})
                   </button>
                   <button onClick={() => { exportarSegovPDF(itensExibidos, 'segov.pdf'); setMenuRelatorios(false) }}
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition text-left border-t border-gray-100">
-                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
                     Exportar PDF ({itensExibidos.length})
                   </button>
                 </div>
               </>
             )}
           </div>
+          {/* Importar Pauta */}
           <Link href="/dashboard/segov/importar"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
             Importar Pauta
-          </Link>
-          <Link href="/dashboard/segov/novo"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition"
-            style={{ background: '#8B0000' }}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Nova SEGOV
           </Link>
         </div>
       </div>
+    )
+    return () => setLeftContent(null)
+  }, [itensExibidos, menuRelatorios])
+
+  return (
+    <div className="space-y-2">
 
       {/* Barra de seleção */}
       {selecionados.size > 0 && (
@@ -195,7 +191,7 @@ export default function SeggovPage() {
       )}
 
       {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-110px)]">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-80px)]">
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <div className="w-8 h-8 border-4 border-red-800 border-t-transparent rounded-full animate-spin" />

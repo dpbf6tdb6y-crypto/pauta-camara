@@ -3,6 +3,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { TopbarProvider, useTopbar } from "@/contexts/topbar";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
@@ -18,7 +19,7 @@ const configItems = [
   { href: "/dashboard/analistas", label: "Analistas", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardInner({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -169,7 +170,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col overflow-auto">
         {/* Topbar — fixo no topo */}
-        <header className="bg-white shadow-sm px-6 py-2 flex items-center justify-end flex-shrink-0 sticky top-0 z-40">
+        <header className="bg-white shadow-sm px-5 py-2 flex items-center justify-between flex-shrink-0 sticky top-0 z-40">
+          <TopbarLeft />
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.location.reload()}
@@ -191,10 +193,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 px-5 pt-4 pb-0">
+        <main className="flex-1 px-5 pt-3 pb-0">
           {children}
         </main>
       </div>
     </div>
   );
+}
+
+function TopbarLeft() {
+  const { leftContent } = useTopbar()
+  return <div className="flex-1 flex items-center">{leftContent}</div>
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <TopbarProvider>
+      <DashboardInner>{children}</DashboardInner>
+    </TopbarProvider>
+  )
 }
