@@ -169,11 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col overflow-auto">
         {/* Topbar — fixo no topo */}
-        <header className="bg-white shadow-sm px-6 py-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-40">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-700">Legislativo Pauta</h2>
-            <p className="text-xs text-gray-400">Câmara Municipal de Nova Lima — MG</p>
-          </div>
+        <header className="bg-white shadow-sm px-6 py-2 flex items-center justify-end flex-shrink-0 sticky top-0 z-40">
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.location.reload()}
@@ -195,7 +191,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 px-5 pt-4 pb-0">
           {children}
         </main>
       </div>
