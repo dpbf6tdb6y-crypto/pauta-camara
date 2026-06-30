@@ -121,8 +121,6 @@ export default function SeggovPage() {
       <div className="flex items-center justify-between w-full pr-3">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-gray-800">SEGOV</span>
-          <span className="text-gray-300">|</span>
-          <span className="text-xs text-gray-500">Secretaria de Governo — proposições e status</span>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/dashboard/segov/novo"
