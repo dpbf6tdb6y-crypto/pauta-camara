@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { exportarSegovExcel, exportarSegovPDF } from '@/lib/segov-export'
+import { exportarSegovExcel, exportarSegovPDF, COLUNAS_RELATORIO, type ColunasKey } from '@/lib/segov-export'
 import { useTopbar } from '@/contexts/topbar'
 
 const STATUS_LIST = ['Aguardando', 'Com Parecer', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
@@ -24,6 +24,11 @@ export default function SeggovPage() {
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [excluindo, setExcluindo] = useState(false)
   const [menuRelatorios, setMenuRelatorios] = useState(false)
+  const [modalRelatorio, setModalRelatorio] = useState(false)
+  const [formatoRelatorio, setFormatoRelatorio] = useState<'excel' | 'pdf'>('excel')
+  const [colunasSel, setColunasSel] = useState<Set<ColunasKey>>(
+    new Set(COLUNAS_RELATORIO.map(c => c.key))
+  )
 
   // Filtros por coluna (busca livre, aplicados sobre os itens já carregados)
   const [colProposicao, setColProposicao] = useState('')
@@ -116,38 +121,15 @@ export default function SeggovPage() {
           <span className="text-xs text-gray-500">Secretaria de Governo — proposições e status</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Nova SEGOV */}
           <Link href="/dashboard/segov/novo"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition"
             style={{ background: '#8B0000' }}>
             + Nova SEGOV
           </Link>
-          {/* Relatórios */}
-          <div className="relative">
-            <button onClick={() => setMenuRelatorios(v => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
-              Relatórios
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {menuRelatorios && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setMenuRelatorios(false)} />
-                <div className="absolute left-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
-                  <button onClick={() => { exportarSegovExcel(itensExibidos, 'segov.xlsx'); setMenuRelatorios(false) }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition text-left">
-                    Exportar Excel ({itensExibidos.length})
-                  </button>
-                  <button onClick={() => { exportarSegovPDF(itensExibidos, 'segov.pdf'); setMenuRelatorios(false) }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition text-left border-t border-gray-100">
-                    Exportar PDF ({itensExibidos.length})
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-          {/* Importar Pauta */}
+          <button onClick={() => setModalRelatorio(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
+            Relatórios
+          </button>
           <Link href="/dashboard/segov/importar"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
             Importar Pauta
@@ -156,7 +138,23 @@ export default function SeggovPage() {
       </div>
     )
     return () => setLeftContent(null)
-  }, [itensExibidos, menuRelatorios])
+  }, [itensExibidos])
+
+  function toggleColuna(key: ColunasKey) {
+    setColunasSel(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+
+  function exportar() {
+    const cols = COLUNAS_RELATORIO.map(c => c.key).filter(k => colunasSel.has(k))
+    if (cols.length === 0) return
+    if (formatoRelatorio === 'excel') exportarSegovExcel(itensExibidos, cols, 'segov.xlsx')
+    else exportarSegovPDF(itensExibidos, cols, 'segov.pdf')
+    setModalRelatorio(false)
+  }
 
   return (
     <div className="space-y-2">
@@ -365,6 +363,81 @@ export default function SeggovPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de seleção de colunas para relatório */}
+      {modalRelatorio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-[480px] max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-base font-bold text-gray-800">Configurar Relatório</h2>
+              <button onClick={() => setModalRelatorio(false)} className="text-gray-400 hover:text-gray-600 transition">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-4 flex-1 overflow-y-auto space-y-4">
+              {/* Formato */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Formato</p>
+                <div className="flex gap-3">
+                  {(['excel', 'pdf'] as const).map(f => (
+                    <button key={f} onClick={() => setFormatoRelatorio(f)}
+                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition ${
+                        formatoRelatorio === f
+                          ? 'border-red-800 bg-red-50 text-red-800'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}>
+                      {f === 'excel' ? '📊 Excel (.xlsx)' : '📄 PDF'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Colunas */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Colunas</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setColunasSel(new Set(COLUNAS_RELATORIO.map(c => c.key)))}
+                      className="text-xs text-blue-600 hover:underline">Todas</button>
+                    <button onClick={() => setColunasSel(new Set())}
+                      className="text-xs text-gray-400 hover:underline">Limpar</button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {COLUNAS_RELATORIO.map(col => (
+                    <label key={col.key}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                      <input type="checkbox" checked={colunasSel.has(col.key)}
+                        onChange={() => toggleColuna(col.key)}
+                        className="w-4 h-4 accent-red-800" />
+                      <span className="text-sm text-gray-700">{col.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-400">
+                {itensExibidos.length} item(ns) serão exportados
+              </p>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+              <button onClick={() => setModalRelatorio(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                Cancelar
+              </button>
+              <button onClick={exportar} disabled={colunasSel.size === 0}
+                className="px-6 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50"
+                style={{ background: '#8B0000' }}>
+                Exportar {formatoRelatorio === 'excel' ? 'Excel' : 'PDF'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
