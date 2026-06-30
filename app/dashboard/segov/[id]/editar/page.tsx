@@ -4,7 +4,14 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 
 const TIPOS = ['PL', 'PLC', 'PDL', 'REQ', 'IND', 'MOC']
-const STATUS_LIST = ['Aguardando', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
+const STATUS_LIST = ['Aguardando', 'Com Parecer', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
+
+type Autor = { id?: string; nome: string; isPE: boolean }
+
+function formatNumero(n: string) {
+  const digits = n.replace(/\D/g, '')
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
 
 export default function EditarSeggovPage() {
   const router = useRouter()
@@ -14,13 +21,15 @@ export default function EditarSeggovPage() {
   const [carregando, setCarregando] = useState(true)
   const [form, setForm] = useState({
     numero: '', ano: String(new Date().getFullYear()), tipo: 'PL',
-    ementa: '', vereadorId: '', status: 'Aguardando', dataEnvio: '', observacao: ''
+    ementa: '', status: 'Aguardando', dataEnvio: '',
   })
+  const [autores, setAutores] = useState<Autor[]>([])
+  const [autorInput, setAutorInput] = useState('')
 
   useEffect(() => {
     Promise.all([
       fetch('/api/vereadores').then(r => r.json()),
-      fetch(`/api/segov?`).then(r => r.json()),
+      fetch('/api/segov').then(r => r.json()),
     ]).then(([vers, todos]) => {
       setVereadores(vers)
       const item = todos.find((i: any) => i.id === id)
@@ -30,11 +39,38 @@ export default function EditarSeggovPage() {
           ano: String(item.ano),
           tipo: item.tipo,
           ementa: item.ementa,
-          vereadorId: item.vereadorId || '',
           status: item.status,
           dataEnvio: item.dataEnvio ? item.dataEnvio.split('T')[0] : '',
-          observacao: item.observacao || '',
         })
+
+        // Monta lista de autores a partir dos dados do item
+        const lista: Autor[] = []
+        const nomeRaw: string = item.autorNome || ''
+        if (item.vereadorId) {
+          const v = vers.find((v: any) => v.id === item.vereadorId)
+          if (v) lista.push({ id: v.id, nome: v.nome, isPE: false })
+        }
+        if (nomeRaw) {
+          const nomes = nomeRaw.split(/\s+e\s+|,\s+/).map((n: string) => n.trim()).filter(Boolean)
+          for (const nome of nomes) {
+            const lower = nome.toLowerCase()
+            if (lower.includes('executivo') || lower.includes('prefeitura')) {
+              if (!lista.some(a => a.isPE)) lista.push({ nome: 'Poder Executivo', isPE: true })
+            } else {
+              // tenta match com vereador se ainda não adicionado
+              const matched = vers.find((v: any) => {
+                const nV = v.nome.toLowerCase()
+                return nome.toLowerCase().split(/\s+/).filter((p: string) => p.length > 2).some((p: string) => nV.includes(p))
+              })
+              if (matched && !lista.some(a => a.id === matched.id)) {
+                lista.push({ id: matched.id, nome: matched.nome, isPE: false })
+              } else if (!matched && !lista.some(a => a.nome === nome)) {
+                lista.push({ nome, isPE: false })
+              }
+            }
+          }
+        }
+        setAutores(lista)
       }
       setCarregando(false)
     })
@@ -44,13 +80,32 @@ export default function EditarSeggovPage() {
     setForm(f => ({ ...f, [field]: value }))
   }
 
+  function adicionarAutor(valor: string) {
+    if (!valor) return
+    setAutorInput('')
+    if (valor === 'executivo') {
+      if (!autores.some(a => a.isPE))
+        setAutores(prev => [...prev, { nome: 'Poder Executivo', isPE: true }])
+      return
+    }
+    const v = vereadores.find((v: any) => v.id === valor)
+    if (v && !autores.some(a => a.id === v.id))
+      setAutores(prev => [...prev, { id: v.id, nome: v.nome, isPE: false }])
+  }
+
+  function removerAutor(idx: number) {
+    setAutores(prev => prev.filter((_, i) => i !== idx))
+  }
+
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
     setSalvando(true)
+    const autorNome = autores.map(a => a.nome).join(' e ') || null
+    const vereadorId = autores.find(a => !a.isPE && a.id)?.id || null
     const res = await fetch(`/api/segov/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, autorNome, vereadorId }),
     })
     if (res.ok) router.push('/dashboard/segov')
     else { alert('Erro ao salvar'); setSalvando(false) }
@@ -76,16 +131,19 @@ export default function EditarSeggovPage() {
         </Link>
         <div className="flex-1 text-center">
           <h1 className="text-xl font-bold text-gray-800">Editar</h1>
-          <p className="text-sm text-gray-500">{form.tipo} {form.numero}/{form.ano}</p>
+          <p className="text-sm text-gray-500">{form.tipo} {formatNumero(form.numero)}/{form.ano}</p>
         </div>
         <div className="w-24" />
       </div>
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+        {/* Linha 1: Número | Ano | Tipo | Status */}
         <div className="grid grid-cols-5 gap-4">
           <div className="col-span-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Número</label>
-            <input required value={form.numero} onChange={e => set('numero', e.target.value)}
+            <input required
+              value={formatNumero(form.numero)}
+              onChange={e => set('numero', e.target.value.replace(/\./g, ''))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
           </div>
           <div>
@@ -109,32 +167,55 @@ export default function EditarSeggovPage() {
           </div>
         </div>
 
+        {/* Ementa */}
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ementa</label>
-          <textarea required rows={3} value={form.ementa} onChange={e => set('ementa', e.target.value)}
+          <textarea required rows={6} value={form.ementa} onChange={e => set('ementa', e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 resize-none" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vereador</label>
-            <select value={form.vereadorId} onChange={e => set('vereadorId', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
-              <option value="">— Selecione —</option>
-              {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data de Envio</label>
-            <input type="date" value={form.dataEnvio} onChange={e => set('dataEnvio', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
-          </div>
-        </div>
-
+        {/* Autor */}
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Observação</label>
-          <textarea rows={2} value={form.observacao} onChange={e => set('observacao', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 resize-none" />
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor</label>
+          <div className="flex gap-2 items-start">
+            <select value={autorInput}
+              onChange={e => { adicionarAutor(e.target.value); setAutorInput('') }}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+              <option value="">— Selecionar autor —</option>
+              <option value="executivo">⚡ Poder Executivo</option>
+              <optgroup label="Vereadores">
+                {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
+              </optgroup>
+            </select>
+            {autores.length > 0 && (
+              <div className="flex flex-wrap gap-2 flex-1">
+                {autores.map((a, i) => (
+                  <span key={i}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                      a.isPE
+                        ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                        : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                    }`}>
+                    {a.isPE && <span className="text-orange-500">⚡</span>}
+                    {a.nome}
+                    <button type="button" onClick={() => removerAutor(i)}
+                      className="ml-0.5 text-gray-400 hover:text-red-500 transition">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Data de Envio */}
+        <div className="w-48">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data de Entrada</label>
+          <input type="date" value={form.dataEnvio} onChange={e => set('dataEnvio', e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
         </div>
 
         <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
