@@ -14,7 +14,20 @@ type Proposicao = {
   vereadorId?: string;
 };
 
-// "23 de junho de 2026" → "2026-06-23T12:00:00.000Z" (noon UTC evita problema de fuso)
+type ParecerItem = {
+  tipo: string;
+  numero: string;
+  ano: number;
+  parecerComissao: string;
+  parecerConjunto: boolean;
+  proxComissao?: string;
+  autorNome?: string;
+  ementa?: string;
+  dataParecere?: string;
+  jaExiste?: boolean;
+};
+
+// "23 de junho de 2026" → "2026-06-23T12:00:00.000Z"
 function extrairData(texto: string): string | undefined {
   const meses: Record<string, number> = {
     janeiro: 1, fevereiro: 2, marco: 3, abril: 4, maio: 5, junho: 6,
@@ -29,23 +42,25 @@ function extrairData(texto: string): string | undefined {
   return `${m[3]}-${monthStr}-${day}T12:00:00.000Z`;
 }
 
-// Recorta a seção "Apresentação de proposições".
-// Usa a ÚLTIMA ocorrência para não pegar o índice/sumário que vem antes da seção real.
+// Usa a ÚLTIMA ocorrência para não pegar o sumário
 function extrairSecaoApresentacao(texto: string): string {
   const reInicio = /Apresenta[çc][ãa]o\s+de\s+proposi[çc][õo]es/gi;
   const reFim = /Leitura\s+de\s+Parecer|d\)\s*Leitura|II\s+SEGUNDA|SEGUNDA\s+PARTE/i;
-
-  let lastIdx = -1;
-  let lastLen = 0;
+  let lastIdx = -1, lastLen = 0;
   let m: RegExpExecArray | null;
-  while ((m = reInicio.exec(texto)) !== null) {
-    lastIdx = m.index;
-    lastLen = m[0].length;
-  }
-
+  while ((m = reInicio.exec(texto)) !== null) { lastIdx = m.index; lastLen = m[0].length; }
   if (lastIdx === -1) return texto;
-
   const resto = texto.slice(lastIdx + lastLen);
+  const fim = resto.match(reFim);
+  return fim && fim.index !== undefined ? resto.slice(0, fim.index) : resto;
+}
+
+function extrairSecaoPareceres(texto: string): string {
+  const reInicio = /d\)\s*Leitura\s+de\s+Parecer/i;
+  const reFim = /II\s+SEGUNDA\s+PARTE|SEGUNDA\s+PARTE|\bII\b/i;
+  const ini = texto.match(reInicio);
+  if (!ini || ini.index === undefined) return "";
+  const resto = texto.slice(ini.index + ini[0].length);
   const fim = resto.match(reFim);
   return fim && fim.index !== undefined ? resto.slice(0, fim.index) : resto;
 }
@@ -62,37 +77,27 @@ function extrairComRegex(texto: string): Proposicao[] {
 
     const afterMatch = secao.slice(matchIndex + matchLen, matchIndex + matchLen + 700);
 
-    // Ementa: começa após "que" (com ou sem espaço antes de «), ou após "—", "-"
-    // Para: "Cruz, que Declara" ou "Cruz que «Institui" ou "Cruz que\nInstitui"
-    // Stop: * ou • (Encaminhar), próximo item numerado/letrado, ou fim
     let ementa = "";
     const emenMatch = afterMatch.match(
       /(?:\s+que\s*[«"«»]?|[-–—:]\s*)([\s\S]{5,500}?)(?=\n\s*[•*]|[•*]\s*[Ee]ncaminhar|\n\s*\d+\)|\n\s*[a-dA-D]\)|$)/i
     );
     if (emenMatch) {
       ementa = emenMatch[1]
-        .replace(/\s*[•*]\s*[Ee]ncaminhar[\s\S]*$/, "") // remove "• Encaminhar..." inline
+        .replace(/\s*[•*]\s*[Ee]ncaminhar[\s\S]*$/, "")
         .replace(/^[«»""«»]+/, "")
         .replace(/\s+/g, " ")
         .trim();
     }
 
-    // Andamento: "* Encaminhar à ..." ou "• Encaminhar à ..."
     let observacao: string | undefined;
     const encMatch = afterMatch.match(/[•*]\s*Encaminhar\s+[àa]\s+([^\n\r.]+)/i);
     if (encMatch) observacao = encMatch[1].trim();
 
-    // Autor: "autoria Vereador[a/es/as] Nome" ou "autoria do Poder Executivo"
-    // Vírgula antes de "autoria" é opcional (PL do Poder Executivo pode não ter)
     let autorNome: string | undefined;
     const autorMatch = afterMatch.match(
       /(?:,\s*)?\bautoria\s+(?:dos?\s+)?(?:Vereador(?:a|es|as)?\s+)?([^\n,]+?)(?:(?:,\s*)?que\b|\n|$)/i
     );
-    if (autorMatch) {
-      autorNome = autorMatch[1]
-        .replace(/^Vereador(?:a|es|as)?\s+/i, "")
-        .trim();
-    }
+    if (autorMatch) autorNome = autorMatch[1].replace(/^Vereador(?:a|es|as)?\s+/i, "").trim();
 
     mapa.set(key, { tipo, numero, ano: parseInt(anoStr), ementa, observacao, dataEnvio, autorNome });
   }
@@ -120,8 +125,77 @@ function extrairComRegex(texto: string): Proposicao[] {
   return Array.from(mapa.values());
 }
 
-// PDF: usa Claude API (lê nativamente, entende qualquer encoding)
-async function extrairPdfComClaude(buffer: Buffer): Promise<{ proposicoes: Proposicao[]; dataEnvio?: string }> {
+function extrairPareceres(texto: string, dataEnvio?: string): ParecerItem[] {
+  const secao = extrairSecaoPareceres(texto);
+  if (!secao) return [];
+
+  const result: ParecerItem[] = [];
+
+  // Regex: "Parecer [CONJUNTO] da[s] Comissão[ões] de X [, Y e Z], referente ao [TIPO] nº NUM/ANO"
+  const reParecer = /\bParecer(\s+CONJUNTO)?\s+das?\s+Comiss[ãa][õo]e?s?\s+de\s+([\s\S]+?),\s*referente\s+ao\s+(Projeto\s+de\s+Lei(?:\s+Complementar)?|Projeto\s+de\s+Decreto\s+Legislativo|Requerimento|Indica[çc][ãa]o|Mo[çc][ãa]o)\s*[nN°º]*\.?\s*([\d][\d.]*)\s*[\/\-]\s*(\d{4})/gi;
+
+  let m: RegExpExecArray | null;
+  while ((m = reParecer.exec(secao)) !== null) {
+    const conjunto = !!(m[1]?.trim());
+    const comissaoNome = m[2].replace(/\s+/g, " ").trim();
+    const tipoTexto = m[3].toLowerCase();
+    const numRaw = m[4];
+    const anoStr = m[5];
+
+    let tipo = "PL";
+    if (tipoTexto.includes("decreto legislativo")) tipo = "PDL";
+    else if (tipoTexto.includes("complementar")) tipo = "PLC";
+    else if (tipoTexto.includes("requerimento")) tipo = "REQ";
+    else if (tipoTexto.includes("indica")) tipo = "IND";
+    else if (tipoTexto.includes("mo")) tipo = "MOC";
+
+    const numero = numRaw.replace(/\./g, "");
+
+    const afterMatch = secao.slice(m.index + m[0].length, m.index + m[0].length + 700);
+
+    let ementa: string | undefined;
+    const emenMatch = afterMatch.match(
+      /(?:,\s*)?que\s+([\s\S]{5,400}?)(?=\n\s*[•*]|[•*]\s*[Ee]ncaminhar|\n\s*\d+\.|$)/i
+    );
+    if (emenMatch) {
+      ementa = emenMatch[1]
+        .replace(/\s*[•*]\s*[Ee]ncaminhar[\s\S]*$/, "")
+        .replace(/\s*[-–]\s*LDO\s*$/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    let proxComissao: string | undefined;
+    const encMatch = afterMatch.match(/[•*]\s*Encaminhar\s+[àa]\s+([^\n\r.]+)/i);
+    if (encMatch) proxComissao = encMatch[1].trim();
+
+    let autorNome: string | undefined;
+    const autorMatch = afterMatch.match(
+      /(?:,\s*)?\bautoria\s+(?:dos?\s+)?(?:Vereador(?:a|es|as)?\s+)?([^\n,]+?)(?:(?:,\s*)?que\b|\n|$)/i
+    );
+    if (autorMatch) autorNome = autorMatch[1].replace(/^Vereador(?:a|es|as)?\s+/i, "").trim();
+
+    result.push({
+      tipo,
+      numero,
+      ano: parseInt(anoStr),
+      parecerComissao: comissaoNome,
+      parecerConjunto: conjunto,
+      proxComissao,
+      autorNome,
+      ementa,
+      dataParecere: dataEnvio,
+    });
+  }
+
+  return result;
+}
+
+async function extrairPdfComClaude(buffer: Buffer): Promise<{
+  proposicoes: Proposicao[];
+  pareceres: ParecerItem[];
+  dataEnvio?: string;
+}> {
   const base64 = buffer.toString("base64");
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -134,7 +208,7 @@ async function extrairPdfComClaude(buffer: Buffer): Promise<{ proposicoes: Propo
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [{
         role: "user",
         content: [
@@ -142,28 +216,35 @@ async function extrairPdfComClaude(buffer: Buffer): Promise<{ proposicoes: Propo
           {
             type: "text",
             text: `Este documento é uma pauta de sessão da Câmara Municipal de Nova Lima, MG.
-Extraia APENAS as proposições da seção "Apresentação de proposições" (seção c da Primeira Parte).
-NÃO inclua itens de "Leitura de Parecer", "Discussão e votação" ou outras seções.
+Extraia as proposições de DUAS seções distintas:
 
-Cada proposição segue este formato exato:
-N) [Tipo] nº [NUMERO]/[ANO], autoria [AUTOR], que [EMENTA]
-* Encaminhar à [COMISSÃO].
+1) Seção "c) Apresentação de proposições" (Primeira Parte)
+2) Seção "d) Leitura de Parecer" (Primeira Parte)
 
-Retorne SOMENTE um JSON válido (sem markdown, sem explicação):
+Retorne SOMENTE um JSON válido (sem markdown):
 {
   "dataEnvio": "2026-06-23",
   "proposicoes": [
-    {"tipo":"PL","numero":"2725","ano":2026,"ementa":"Declara Utilidade Pública a Associação...","observacao":"Comissão de Legislação e Justiça","autorNome":"Nilton Cruz"}
+    {"tipo":"PL","numero":"2725","ano":2026,"ementa":"Declara Utilidade Pública...","observacao":"Comissão de Legislação e Justiça","autorNome":"Nilton Cruz"}
+  ],
+  "pareceres": [
+    {"tipo":"PL","numero":"2605","ano":2025,"parecerComissao":"Legislação e Justiça","parecerConjunto":false,"proxComissao":"Comissão de Participação Popular","autorNome":"Joselino Santana","ementa":"Institui a Semana do Cavalo..."}
   ]
 }
 
-Regras:
-- tipo: "Projeto de Lei"→PL, "Projeto de Lei Complementar"→PLC, "Projeto de Decreto Legislativo"→PDL, "Requerimento"→REQ, "Indicação"→IND, "Moção"→MOC
-- numero: remova pontos (2.725→"2725")
-- ementa: o que o projeto propõe — é o texto que vem após a palavra "que" na linha da proposição (começa com "Declara", "Institui", "Altera" etc.). NÃO inclua "* Encaminhar" na ementa.
-- observacao: nome da comissão de "* Encaminhar à ..." (sem "Comissão de")
-- autorNome: apenas o nome do autor, sem "Vereador/a". Se for "Poder Executivo", use "Poder Executivo".
-- dataEnvio: data da sessão no formato YYYY-MM-DD`,
+Regras para proposicoes (Apresentação):
+- tipo: PL, PLC, PDL, REQ, IND, MOC
+- numero: sem pontos (2.725→"2725")
+- ementa: texto após "que" até "• Encaminhar". NÃO inclua "Encaminhar".
+- observacao: comissão de "• Encaminhar à ..."
+- autorNome: nome sem "Vereador/a"; "Poder Executivo" se for do executivo
+
+Regras para pareceres (Leitura de Parecer):
+- parecerComissao: nome(s) da(s) comissão(ões) sem "Comissão de" (ex: "Legislação e Justiça")
+- parecerConjunto: true se "Parecer CONJUNTO"
+- proxComissao: comissão de "• Encaminhar à ..." (null se não houver)
+- demais campos: mesmas regras das proposicoes
+- dataEnvio: data da sessão YYYY-MM-DD`,
           }
         ]
       }]
@@ -177,14 +258,13 @@ Regras:
 
   const data = await res.json();
   const text: string = data.content?.[0]?.text || "{}";
-
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return { proposicoes: [] };
+  if (!jsonMatch) return { proposicoes: [], pareceres: [] };
 
   try {
     const parsed = JSON.parse(jsonMatch[0]);
-    // Usa noon UTC para evitar deslocamento de fuso no navegador
     const dataEnvio = parsed.dataEnvio ? `${parsed.dataEnvio}T12:00:00.000Z` : undefined;
+
     const proposicoes: Proposicao[] = (parsed.proposicoes || []).map((p: any) => ({
       tipo: p.tipo,
       numero: String(p.numero).replace(/\./g, ""),
@@ -194,14 +274,28 @@ Regras:
       dataEnvio,
       autorNome: p.autorNome || undefined,
     }));
-    return { proposicoes, dataEnvio };
+
+    const pareceres: ParecerItem[] = (parsed.pareceres || []).map((p: any) => ({
+      tipo: p.tipo,
+      numero: String(p.numero).replace(/\./g, ""),
+      ano: parseInt(p.ano),
+      parecerComissao: p.parecerComissao || "",
+      parecerConjunto: !!p.parecerConjunto,
+      proxComissao: p.proxComissao || undefined,
+      autorNome: p.autorNome || undefined,
+      ementa: p.ementa || undefined,
+      dataParecere: dataEnvio,
+    }));
+
+    return { proposicoes, pareceres, dataEnvio };
   } catch {
-    return { proposicoes: [] };
+    return { proposicoes: [], pareceres: [] };
   }
 }
 
 export async function POST(req: Request) {
   let proposicoes: Proposicao[] = [];
+  let pareceres: ParecerItem[] = [];
   let dataEnvio: string | undefined;
   const ct = req.headers.get("content-type") || "";
 
@@ -217,6 +311,7 @@ export async function POST(req: Request) {
       try {
         const result = await extrairPdfComClaude(buffer);
         proposicoes = result.proposicoes;
+        pareceres = result.pareceres;
         dataEnvio = result.dataEnvio;
       } catch (e: any) {
         return NextResponse.json({ error: e.message || "Erro ao processar PDF" }, { status: 500 });
@@ -236,61 +331,56 @@ export async function POST(req: Request) {
       } catch {
         return NextResponse.json({ error: "Erro ao ler o arquivo." }, { status: 400 });
       }
+      dataEnvio = extrairData(texto);
       proposicoes = extrairComRegex(texto);
-      dataEnvio = proposicoes[0]?.dataEnvio;
+      pareceres = extrairPareceres(texto, dataEnvio);
     }
   } else {
     const body = await req.json();
     const texto = body.texto || "";
     if (!texto.trim()) return NextResponse.json({ error: "Nenhum texto fornecido" }, { status: 400 });
+    dataEnvio = extrairData(texto);
     proposicoes = extrairComRegex(texto);
-    dataEnvio = proposicoes[0]?.dataEnvio;
+    pareceres = extrairPareceres(texto, dataEnvio);
   }
 
-  if (proposicoes.length === 0) {
-    return NextResponse.json({ proposicoes: [], total: 0, dataEnvio });
-  }
-
-  // Match vereador por pontuação: exige ≥ 2 palavras coincidentes, ou match único sem ambiguidade
   const vereadores = await prisma.vereador.findMany({ select: { id: true, nome: true } });
 
   function matchVereador(autorNome?: string): string | undefined {
     if (!autorNome) return undefined;
     const lower = autorNome.toLowerCase().trim();
     if (lower.includes("executivo") || lower.includes("prefeitura")) return undefined;
-
     const palavras = lower.split(/\s+/).filter(p => p.length > 2);
     if (palavras.length === 0) return undefined;
-
-    // Pontua cada vereador pelo número de palavras do autor que aparecem no nome
     const scores = vereadores
-      .map(v => ({
-        id: v.id,
-        score: palavras.filter(p => v.nome.toLowerCase().includes(p)).length,
-      }))
+      .map(v => ({ id: v.id, score: palavras.filter(p => v.nome.toLowerCase().includes(p)).length }))
       .filter(s => s.score > 0)
       .sort((a, b) => b.score - a.score);
-
     if (scores.length === 0) return undefined;
-
     const melhor = scores[0];
-    // Aceita se ≥ 2 palavras coincidem, ou se há apenas 1 candidato
     if (melhor.score >= 2) return melhor.id;
     if (scores.length === 1) return melhor.id;
-    return undefined; // ambíguo (ex: "Cruz" bate em "Nilton Cruz" e "Ismael Cruz")
+    return undefined;
   }
 
-  proposicoes = proposicoes.map(p => ({
-    ...p,
-    vereadorId: p.vereadorId ?? matchVereador(p.autorNome),
-  }));
+  proposicoes = proposicoes.map(p => ({ ...p, vereadorId: p.vereadorId ?? matchVereador(p.autorNome) }));
 
-  const existentes = await Promise.all(
-    proposicoes.map(p =>
-      prisma.segov.findFirst({ where: { tipo: p.tipo, numero: p.numero, ano: p.ano } })
-    )
+  // Verifica existência das proposições (apresentação)
+  const existentesProps = await Promise.all(
+    proposicoes.map(p => prisma.segov.findFirst({ where: { tipo: p.tipo, numero: p.numero, ano: p.ano } }))
   );
+  const proposicoesResult = proposicoes.map((p, i) => ({ ...p, jaExiste: existentesProps[i] !== null }));
 
-  const resultado = proposicoes.map((p, i) => ({ ...p, jaExiste: existentes[i] !== null }));
-  return NextResponse.json({ proposicoes: resultado, total: resultado.length, dataEnvio });
+  // Verifica existência dos pareceres no SEGOV
+  const existentesParec = await Promise.all(
+    pareceres.map(p => prisma.segov.findFirst({ where: { tipo: p.tipo, numero: p.numero, ano: p.ano } }))
+  );
+  const parecedResult = pareceres.map((p, i) => ({ ...p, jaExiste: existentesParec[i] !== null }));
+
+  return NextResponse.json({
+    proposicoes: proposicoesResult,
+    pareceres: parecedResult,
+    total: proposicoesResult.length + parecedResult.length,
+    dataEnvio,
+  });
 }

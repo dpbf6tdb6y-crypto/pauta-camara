@@ -1,74 +1,38 @@
 'use client'
 import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 type Modo = 'texto' | 'pdf' | 'word' | 'excel'
 type Etapa = 'upload' | 'revisao' | 'sucesso'
 
-type ItemExtraido = {
-  tipo: string
-  numero: string
-  ano: number
-  ementa: string
-  jaExiste: boolean
-  incluir: boolean
-  observacao?: string
-  dataEnvio?: string
-  autorNome?: string
-  vereadorId?: string
+type ItemProposicao = {
+  tipo: string; numero: string; ano: number; ementa: string
+  jaExiste: boolean; incluir: boolean
+  observacao?: string; dataEnvio?: string; autorNome?: string; vereadorId?: string
+}
+
+type ItemParecer = {
+  tipo: string; numero: string; ano: number
+  parecerComissao: string; parecerConjunto: boolean
+  proxComissao?: string; autorNome?: string; ementa?: string; dataParecere?: string
+  jaExiste: boolean; incluir: boolean
 }
 
 const MODOS: { id: Modo; label: string; accept: string; ext: string }[] = [
   { id: 'texto', label: 'Colar Texto', accept: '', ext: '' },
   { id: 'pdf',   label: 'PDF',         accept: 'application/pdf,.pdf', ext: '.pdf' },
-  { id: 'word',  label: 'Word',        accept: '.docx,.doc,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document', ext: '.docx' },
-  { id: 'excel', label: 'Excel',       accept: '.xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ext: '.xlsx' },
+  { id: 'word',  label: 'Word',        accept: '.docx,.doc', ext: '.docx' },
+  { id: 'excel', label: 'Excel',       accept: '.xlsx,.xls', ext: '.xlsx' },
 ]
 
 const TIPO_COR: Record<string, string> = {
-  PL: 'bg-blue-100 text-blue-800',
-  PLC: 'bg-indigo-100 text-indigo-800',
-  PDL: 'bg-violet-100 text-violet-800',
-  REQ: 'bg-amber-100 text-amber-800',
-  IND: 'bg-teal-100 text-teal-800',
-  MOC: 'bg-pink-100 text-pink-800',
-}
-
-const ICONE: Record<Modo, React.ReactNode> = {
-  texto: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 6h16M4 10h16M4 14h10" />
-    </svg>
-  ),
-  pdf: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-    </svg>
-  ),
-  word: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-  ),
-  excel: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 10h18M3 14h18M10 3v18M3 3h18v18H3V3z" />
-    </svg>
-  ),
-}
-
-const COR_MODO: Record<Modo, string> = {
-  texto: 'border-gray-400 text-gray-700',
-  pdf:   'border-red-500 text-red-700',
-  word:  'border-blue-500 text-blue-700',
-  excel: 'border-green-600 text-green-700',
+  PL: 'bg-blue-100 text-blue-800', PLC: 'bg-indigo-100 text-indigo-800',
+  PDL: 'bg-violet-100 text-violet-800', REQ: 'bg-amber-100 text-amber-800',
+  IND: 'bg-teal-100 text-teal-800', MOC: 'bg-pink-100 text-pink-800',
 }
 
 export default function ImportarSeggovPage() {
-  const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
-
   const [etapa, setEtapa] = useState<Etapa>('upload')
   const [modo, setModo] = useState<Modo>('pdf')
   const [texto, setTexto] = useState('')
@@ -76,27 +40,23 @@ export default function ImportarSeggovPage() {
   const [extraindo, setExtraindo] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
-  const [itens, setItens] = useState<ItemExtraido[]>([])
-  const [dataEnvio, setDataEnvio] = useState<string | undefined>(undefined)
-  const [resultado, setResultado] = useState<{ criados: number; erros: number } | null>(null)
+  const [proposicoes, setProposicoes] = useState<ItemProposicao[]>([])
+  const [pareceres, setPareceres] = useState<ItemParecer[]>([])
+  const [dataEnvio, setDataEnvio] = useState<string | undefined>()
+  const [resultado, setResultado] = useState<{ criados: number; atualizados: number; erros: number } | null>(null)
 
   function trocarModo(m: Modo) {
-    setModo(m)
-    setArquivo(null)
-    setErro('')
+    setModo(m); setArquivo(null); setErro('')
     if (inputRef.current) inputRef.current.value = ''
   }
 
   async function extrair() {
-    setExtraindo(true)
-    setErro('')
-
+    setExtraindo(true); setErro('')
     try {
       let res: Response
       if (modo === 'texto') {
         res = await fetch('/api/segov/extrair', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ texto }),
         })
       } else {
@@ -107,44 +67,25 @@ export default function ImportarSeggovPage() {
       }
 
       const data = await res.json()
-      if (!res.ok) {
-        setErro(data.error || 'Erro ao extrair')
-        setExtraindo(false)
-        return
-      }
+      if (!res.ok) { setErro(data.error || 'Erro ao extrair'); setExtraindo(false); return }
 
-      if (data.proposicoes.length === 0) {
-        setErro('Nenhuma proposição encontrada no documento. Verifique se o arquivo contém referências como "PL 123/2026".')
-        setExtraindo(false)
-        return
+      if (!data.proposicoes?.length && !data.pareceres?.length) {
+        setErro('Nenhuma proposição ou parecer encontrado no documento.')
+        setExtraindo(false); return
       }
 
       setDataEnvio(data.dataEnvio)
-      setItens(data.proposicoes.map((p: any) => ({
-        ...p,
-        incluir: !p.jaExiste,
-      })))
+      setProposicoes((data.proposicoes || []).map((p: any) => ({ ...p, incluir: !p.jaExiste })))
+      setPareceres((data.pareceres || []).map((p: any) => ({ ...p, incluir: true })))
       setEtapa('revisao')
     } catch {
       setErro('Erro de conexão. Tente novamente.')
     }
-
     setExtraindo(false)
   }
 
-  function atualizarEmenta(idx: number, ementa: string) {
-    setItens(prev => prev.map((it, i) => i === idx ? { ...it, ementa } : it))
-  }
-
-  function toggleIncluir(idx: number) {
-    setItens(prev => prev.map((it, i) => i === idx ? { ...it, incluir: !it.incluir } : it))
-  }
-
-  function removerLinha(idx: number) {
-    setItens(prev => prev.filter((_, i) => i !== idx))
-  }
-
-  const paraCadastrar = itens.filter(it => it.incluir && !it.jaExiste)
+  const novasProposicoes = proposicoes.filter(p => p.incluir && !p.jaExiste)
+  const parecedParaAtualizar = pareceres.filter(p => p.incluir)
 
   async function cadastrar() {
     setSalvando(true)
@@ -152,19 +93,18 @@ export default function ImportarSeggovPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        itens: paraCadastrar.map(it => ({
-          ...it,
-          dataEnvio: it.dataEnvio ?? dataEnvio,
-        })),
+        proposicoes: novasProposicoes.map(p => ({ ...p, dataEnvio: p.dataEnvio ?? dataEnvio })),
+        pareceres: parecedParaAtualizar.map(p => ({ ...p, dataParecere: p.dataParecere ?? dataEnvio })),
       }),
     })
     const data = await res.json()
-    setResultado(data)
-    setEtapa('sucesso')
-    setSalvando(false)
+    setResultado(data); setEtapa('sucesso'); setSalvando(false)
   }
 
   const podaExtrair = modo === 'texto' ? texto.trim().length > 0 : arquivo !== null
+  const dataLabel = dataEnvio
+    ? new Date(dataEnvio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : null
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
@@ -176,48 +116,40 @@ export default function ImportarSeggovPage() {
           </svg>
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Importar para o SEGOV</h1>
-          <p className="text-sm text-gray-500">Extrai proposições do documento e cadastra automaticamente</p>
+          <h1 className="text-xl font-bold text-gray-800">Importar Pauta para o SEGOV</h1>
+          <p className="text-sm text-gray-500">Extrai proposições e pareceres da pauta automaticamente</p>
         </div>
       </div>
 
       {/* ETAPA 1 — Upload */}
       {etapa === 'upload' && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-
-          {/* Seleção de formato */}
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Formato do arquivo</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Formato</p>
             <div className="grid grid-cols-4 gap-3">
               {MODOS.map(m => (
                 <button key={m.id} onClick={() => trocarModo(m.id)}
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition text-sm font-semibold ${
-                    modo === m.id ? `${COR_MODO[m.id]} bg-gray-50 shadow-sm` : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                    modo === m.id ? 'border-red-800 text-red-800 bg-red-50' : 'border-gray-200 text-gray-400 hover:border-gray-300'
                   }`}>
-                  <div className={modo === m.id ? '' : 'opacity-30'}>{ICONE[m.id]}</div>
                   {m.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Área de input */}
           {modo === 'texto' ? (
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Texto da Pauta</label>
                 {texto && (
-                  <button onClick={() => setTexto('')}
-                    className="text-xs text-gray-400 hover:text-red-600 transition flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                  <button onClick={() => setTexto('')} className="text-xs text-gray-400 hover:text-red-600 transition">
                     Limpar
                   </button>
                 )}
               </div>
-              <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={12}
-                placeholder={"Cole aqui o texto da pauta...\n\nExemplo:\n1. PL 2592/2026 - Dispõe sobre a criação de...\n2. REQ 45/2026 - Requerimento de informações sobre..."}
+              <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={14}
+                placeholder="Cole aqui o texto completo da pauta..."
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 resize-none font-mono" />
             </div>
           ) : (
@@ -231,9 +163,6 @@ export default function ImportarSeggovPage() {
                 }`}>
                 {arquivo ? (
                   <div className="space-y-1">
-                    <svg className="w-10 h-10 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
                     <p className="font-semibold text-green-700">{arquivo.name}</p>
                     <p className="text-xs text-green-600">{(arquivo.size / 1024).toFixed(1)} KB — clique para trocar</p>
                   </div>
@@ -243,7 +172,7 @@ export default function ImportarSeggovPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    <p className="text-sm font-medium text-gray-500">Clique para selecionar o arquivo</p>
+                    <p className="text-sm font-medium text-gray-500">Clique para selecionar</p>
                     <p className="text-xs text-gray-400">{MODOS.find(m2 => m2.id === modo)?.ext}</p>
                   </div>
                 )}
@@ -253,23 +182,18 @@ export default function ImportarSeggovPage() {
             </div>
           )}
 
-          {erro && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{erro}</div>
-          )}
+          {erro && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{erro}</div>}
 
           <div className="flex justify-end pt-2 border-t border-gray-100">
             <button onClick={extrair} disabled={extraindo || !podaExtrair}
               className="flex items-center gap-2 px-8 py-2.5 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60"
               style={{ background: '#8B0000' }}>
               {extraindo ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                  Extraindo...
-                </>
-              ) : 'Extrair Proposições'}
+                <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>Analisando pauta...</>
+              ) : 'Analisar Pauta'}
             </button>
           </div>
         </div>
@@ -277,24 +201,22 @@ export default function ImportarSeggovPage() {
 
       {/* ETAPA 2 — Revisão */}
       {etapa === 'revisao' && (
-        <div className="space-y-4">
-          {/* Resumo */}
+        <div className="space-y-5">
+          {/* Cabeçalho resumo */}
           <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="font-semibold text-gray-800">
-                {itens.length} proposição(ões) encontrada(s)
-                {dataEnvio && (
-                  <span className="ml-2 text-sm font-normal text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                    Sessão de {new Date(dataEnvio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+              <p className="font-semibold text-gray-800 flex items-center gap-2">
+                Pauta analisada
+                {dataLabel && (
+                  <span className="text-sm font-normal text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                    Sessão de {dataLabel}
                   </span>
                 )}
               </p>
-              <p className="text-sm text-gray-500">
-                {paraCadastrar.length} nova(s) para cadastrar · seção &quot;Apresentação de proposições&quot;
-                {itens.filter(it => it.jaExiste).length > 0 && (
-                  <span className="ml-2 text-amber-600">
-                    · {itens.filter(it => it.jaExiste).length} já cadastrada(s) no SEGOV
-                  </span>
+              <p className="text-sm text-gray-500 mt-0.5">
+                <span className="text-green-700 font-medium">{novasProposicoes.length} nova(s)</span> para criar
+                {parecedParaAtualizar.length > 0 && (
+                  <> · <span className="text-purple-700 font-medium">{parecedParaAtualizar.length} parecer(es)</span> para registrar</>
                 )}
               </p>
             </div>
@@ -303,97 +225,130 @@ export default function ImportarSeggovPage() {
                 className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
                 Voltar
               </button>
-              <button onClick={cadastrar} disabled={salvando || paraCadastrar.length === 0}
+              <button onClick={cadastrar} disabled={salvando || (novasProposicoes.length === 0 && parecedParaAtualizar.length === 0)}
                 className="flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60"
                 style={{ background: '#8B0000' }}>
                 {salvando ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                    </svg>
-                    Cadastrando...
-                  </>
-                ) : `Cadastrar ${paraCadastrar.length} no SEGOV`}
+                  <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>Importando...</>
+                ) : 'Importar para o SEGOV'}
               </button>
             </div>
           </div>
 
-          {/* Tabela */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="w-10 px-3 py-3">
-                    <input type="checkbox"
-                      checked={itens.filter(it => !it.jaExiste).every(it => it.incluir)}
-                      onChange={e => setItens(prev => prev.map(it => it.jaExiste ? it : { ...it, incluir: e.target.checked }))}
-                      className="w-4 h-4 accent-red-800" />
-                  </th>
-                  <th className="text-left px-3 py-3 font-semibold text-gray-600 whitespace-nowrap">Proposição</th>
-                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Ementa extraída</th>
-                  <th className="w-8 px-3 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {itens.map((item, idx) => (
-                  <tr key={idx} className={`transition ${item.jaExiste ? 'bg-amber-50/50' : item.incluir ? '' : 'opacity-50'}`}>
-                    <td className="px-3 py-3 text-center">
-                      {item.jaExiste ? (
-                        <span title="Já cadastrado no SEGOV">
-                          <svg className="w-4 h-4 text-amber-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                          </svg>
-                        </span>
-                      ) : (
-                        <input type="checkbox" checked={item.incluir} onChange={() => toggleIncluir(idx)}
-                          className="w-4 h-4 accent-red-800" />
-                      )}
-                    </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${TIPO_COR[item.tipo] || 'bg-gray-100 text-gray-700'}`}>
-                          {item.tipo}
-                        </span>
-                        <span className="font-semibold text-gray-800">{item.numero}/{item.ano}</span>
-                      </div>
-                      {item.autorNome && (
-                        <p className="text-xs text-gray-400 mt-0.5">{item.autorNome}</p>
-                      )}
-                      {item.jaExiste && (
-                        <span className="text-xs text-amber-600 font-medium">Já no SEGOV</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        value={item.ementa}
-                        onChange={e => atualizarEmenta(idx, e.target.value)}
-                        placeholder="Ementa não extraída — preencha manualmente"
-                        disabled={item.jaExiste}
-                        className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-800/30 disabled:bg-gray-50 disabled:text-gray-400"
-                      />
-                      {item.observacao && (
-                        <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                          </svg>
-                          {item.observacao}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-3 py-3">
-                      <button onClick={() => removerLinha(idx)} title="Remover linha"
-                        className="text-gray-300 hover:text-red-500 transition">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </td>
+          {/* Seção: Apresentação de Proposições */}
+          {proposicoes.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                <span className="text-sm font-semibold text-gray-700">c) Apresentação de Proposições</span>
+                <span className="text-xs text-gray-400 ml-auto">{proposicoes.length} item(s)</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="w-10 px-3 py-2">
+                      <input type="checkbox"
+                        checked={proposicoes.filter(p => !p.jaExiste).every(p => p.incluir)}
+                        onChange={e => setProposicoes(prev => prev.map(p => p.jaExiste ? p : { ...p, incluir: e.target.checked }))}
+                        className="w-4 h-4 accent-red-800" />
+                    </th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Proposição</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Ementa</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Comissão destino</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {proposicoes.map((item, idx) => (
+                    <tr key={idx} className={item.jaExiste ? 'bg-amber-50/40' : item.incluir ? '' : 'opacity-40'}>
+                      <td className="px-3 py-2 text-center">
+                        {item.jaExiste
+                          ? <span className="text-xs text-amber-600 font-medium">Já existe</span>
+                          : <input type="checkbox" checked={item.incluir}
+                              onChange={() => setProposicoes(prev => prev.map((p, i) => i === idx ? { ...p, incluir: !p.incluir } : p))}
+                              className="w-4 h-4 accent-red-800" />
+                        }
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded mr-1 ${TIPO_COR[item.tipo] || 'bg-gray-100 text-gray-700'}`}>{item.tipo}</span>
+                        <span className="font-semibold text-gray-800">{item.numero}/{item.ano}</span>
+                        {item.autorNome && <p className="text-xs text-gray-400 mt-0.5">{item.autorNome}</p>}
+                      </td>
+                      <td className="px-3 py-2 text-gray-600 text-xs max-w-xs">
+                        <span className="line-clamp-2">{item.ementa || <em className="text-gray-400">sem ementa</em>}</span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-gray-500">
+                        {item.observacao && <span className="bg-gray-100 px-2 py-0.5 rounded">{item.observacao}</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Seção: Leitura de Pareceres */}
+          {pareceres.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100 bg-purple-50 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" />
+                <span className="text-sm font-semibold text-purple-700">d) Leitura de Pareceres</span>
+                <span className="text-xs text-purple-400 ml-auto">{pareceres.length} item(s)</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="w-10 px-3 py-2">
+                      <input type="checkbox"
+                        checked={pareceres.every(p => p.incluir)}
+                        onChange={e => setPareceres(prev => prev.map(p => ({ ...p, incluir: e.target.checked })))}
+                        className="w-4 h-4 accent-purple-700" />
+                    </th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Proposição</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Comissão que emitiu</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Próxima comissão</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">No SEGOV</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {pareceres.map((item, idx) => (
+                    <tr key={idx} className={item.incluir ? '' : 'opacity-40'}>
+                      <td className="px-3 py-2 text-center">
+                        <input type="checkbox" checked={item.incluir}
+                          onChange={() => setPareceres(prev => prev.map((p, i) => i === idx ? { ...p, incluir: !p.incluir } : p))}
+                          className="w-4 h-4 accent-purple-700" />
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded mr-1 ${TIPO_COR[item.tipo] || 'bg-gray-100 text-gray-700'}`}>{item.tipo}</span>
+                        <span className="font-semibold text-gray-800">{item.numero}/{item.ano}</span>
+                        {item.autorNome && <p className="text-xs text-gray-400 mt-0.5">{item.autorNome}</p>}
+                      </td>
+                      <td className="px-3 py-2 text-xs">
+                        {item.parecerConjunto && (
+                          <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-1.5 py-0.5 rounded mr-1">CONJUNTO</span>
+                        )}
+                        <span className="text-gray-700">{item.parecerComissao}</span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-gray-500">
+                        {item.proxComissao
+                          ? <span className="bg-gray-100 px-2 py-0.5 rounded">{item.proxComissao}</span>
+                          : <span className="text-gray-300">Pronto p/ votação</span>
+                        }
+                      </td>
+                      <td className="px-3 py-2">
+                        {item.jaExiste
+                          ? <span className="text-xs text-green-700 font-medium bg-green-50 px-2 py-0.5 rounded">Encontrado</span>
+                          : <span className="text-xs text-orange-600 font-medium bg-orange-50 px-2 py-0.5 rounded">Novo</span>
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -406,15 +361,21 @@ export default function ImportarSeggovPage() {
             </svg>
           </div>
           <div>
-            <p className="text-xl font-bold text-gray-800">
-              {resultado.criados} proposição(ões) cadastrada(s) no SEGOV
-            </p>
-            {resultado.erros > 0 && (
-              <p className="text-sm text-red-600 mt-1">{resultado.erros} erro(s) — verifique se já existem entradas duplicadas</p>
-            )}
+            <p className="text-xl font-bold text-gray-800">Pauta importada com sucesso</p>
+            <div className="flex justify-center gap-6 mt-3 text-sm">
+              {resultado.criados > 0 && (
+                <span className="text-blue-700"><strong>{resultado.criados}</strong> proposição(ões) criada(s)</span>
+              )}
+              {resultado.atualizados > 0 && (
+                <span className="text-purple-700"><strong>{resultado.atualizados}</strong> parecer(es) registrado(s)</span>
+              )}
+              {resultado.erros > 0 && (
+                <span className="text-red-600"><strong>{resultado.erros}</strong> erro(s)</span>
+              )}
+            </div>
           </div>
           <div className="flex justify-center gap-3 pt-2">
-            <button onClick={() => { setEtapa('upload'); setItens([]); setArquivo(null); setTexto(''); setResultado(null); setDataEnvio(undefined) }}
+            <button onClick={() => { setEtapa('upload'); setProposicoes([]); setPareceres([]); setArquivo(null); setTexto(''); setResultado(null); setDataEnvio(undefined) }}
               className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
               Nova Importação
             </button>

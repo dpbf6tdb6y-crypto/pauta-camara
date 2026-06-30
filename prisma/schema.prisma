@@ -187,18 +187,22 @@ model PautaItem {
 }
 
 model Segov {
-  id         String    @id @default(cuid())
-  numero     String
-  ano        Int       @default(2026)
-  tipo       String
-  ementa     String
-  vereadorId String?
-  autorNome  String?
-  status     String    @default("Aguardando")
-  dataEnvio  DateTime?
-  observacao String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  numero          String
+  ano             Int       @default(2026)
+  tipo            String
+  ementa          String
+  vereadorId      String?
+  autorNome       String?
+  status          String    @default("Aguardando")
+  dataEnvio       DateTime?
+  observacao      String?   // comissão de destino (apresentação)
+  parecerComissao String?   // comissão(ões) que emitiram o parecer
+  parecerConjunto Boolean   @default(false)
+  proxComissao    String?   // próxima comissão após o parecer
+  dataParecere    DateTime? // data da sessão em que o parecer foi lido
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   vereador Vereador? @relation(fields: [vereadorId], references: [id])
 }

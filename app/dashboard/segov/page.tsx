@@ -3,15 +3,16 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 const TIPOS = ['PL', 'PLC', 'PDL', 'REQ', 'IND', 'MOC']
-const STATUS_LIST = ['Aguardando', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
+const STATUS_LIST = ['Aguardando', 'Com Parecer', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
 
 const STATUS_COR: Record<string, string> = {
-  'Aguardando':  'bg-yellow-100 text-yellow-800',
-  'Em análise':  'bg-blue-100 text-blue-800',
-  'Aprovado':    'bg-green-100 text-green-800',
-  'Rejeitado':   'bg-red-100 text-red-800',
-  'Arquivado':   'bg-gray-100 text-gray-700',
-  'Retirado':    'bg-orange-100 text-orange-800',
+  'Aguardando':   'bg-yellow-100 text-yellow-800',
+  'Com Parecer':  'bg-purple-100 text-purple-800',
+  'Em análise':   'bg-blue-100 text-blue-800',
+  'Aprovado':     'bg-green-100 text-green-800',
+  'Rejeitado':    'bg-red-100 text-red-800',
+  'Arquivado':    'bg-gray-100 text-gray-700',
+  'Retirado':     'bg-orange-100 text-orange-800',
 }
 
 export default function SeggovPage() {
@@ -214,11 +215,26 @@ export default function SeggovPage() {
                           : <span className="text-gray-400">—</span>
                       }
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs max-w-[200px]">
-                      {item.observacao
-                        ? <span title={item.observacao} className="line-clamp-2">{item.observacao}</span>
-                        : <span className="text-gray-300">—</span>
-                      }
+                    <td className="px-4 py-3 text-xs max-w-[220px] space-y-1">
+                      {item.observacao && (
+                        <div title={item.observacao} className="text-gray-500 line-clamp-1">{item.observacao}</div>
+                      )}
+                      {item.parecerComissao && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {item.parecerConjunto && (
+                            <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-1 py-0.5 rounded">CONJ</span>
+                          )}
+                          <span className="text-purple-700 font-medium" title={`Parecer: ${item.parecerComissao}`}>
+                            ✓ {item.parecerComissao}
+                          </span>
+                        </div>
+                      )}
+                      {item.proxComissao && (
+                        <div className="text-gray-400" title={`Encaminhar: ${item.proxComissao}`}>→ {item.proxComissao}</div>
+                      )}
+                      {!item.observacao && !item.parecerComissao && (
+                        <span className="text-gray-300">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
