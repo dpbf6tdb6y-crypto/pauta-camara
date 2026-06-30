@@ -172,7 +172,7 @@ export default function SeggovPage() {
             <p className="text-sm mt-1">Cadastre um novo item ou ajuste os filtros</p>
           </div>
         ) : (
-          <table className="w-full min-w-[1200px] text-sm">
+          <table className="w-full min-w-[1400px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="w-10 px-4 py-3">
@@ -183,7 +183,7 @@ export default function SeggovPage() {
                     className="w-4 h-4 accent-red-800 cursor-pointer" />
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 w-32">Proposição</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Ementa</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 min-w-[420px]">Ementa</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 w-36">Vereador</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 w-56">Comissão</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Status</th>
