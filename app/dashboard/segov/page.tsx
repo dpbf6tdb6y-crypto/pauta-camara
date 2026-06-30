@@ -205,7 +205,14 @@ export default function SeggovPage() {
                       {item.numero}/{item.ano}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{item.ementa}</td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{item.vereador?.nome || '—'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {item.vereador?.nome
+                        ? <span className="text-gray-600">{item.vereador.nome}</span>
+                        : item.autorNome
+                          ? <span className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{item.autorNome}</span>
+                          : <span className="text-gray-400">—</span>
+                      }
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
                         {item.status}

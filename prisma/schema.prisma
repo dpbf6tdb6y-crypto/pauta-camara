@@ -193,6 +193,7 @@ model Segov {
   tipo       String
   ementa     String
   vereadorId String?
+  autorNome  String?
   status     String    @default("Aguardando")
   dataEnvio  DateTime?
   observacao String?

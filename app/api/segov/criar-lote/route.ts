@@ -19,6 +19,7 @@ export async function POST(req: Request) {
           ano: parseInt(item.ano),
           ementa: item.ementa?.trim() || "(sem ementa)",
           vereadorId: item.vereadorId || null,
+          autorNome: item.autorNome || null,
           status: "Aguardando",
           observacao: item.observacao || null,
           dataEnvio: item.dataEnvio ? new Date(item.dataEnvio) : null,

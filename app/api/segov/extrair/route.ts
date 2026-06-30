@@ -52,23 +52,25 @@ function extrairComRegex(texto: string): Proposicao[] {
 
     const afterMatch = secao.slice(matchIndex + matchLen, matchIndex + matchLen + 600);
 
-    // Ementa: texto após "que " ou após " - " / " – "
+    // Ementa: texto após "que" (com ou sem vírgula antes) ou após " - / – "
+    // Captura multilinha até "* Encaminhar", próximo item ou fim da seção
     let ementa = "";
-    // Ementa: texto após "que " (ex: "autoria Vereador X, que Declara...") ou após " - "
-    // Captura até encontrar "* Encaminhar", próximo item numerado ou fim da seção
     const emenMatch = afterMatch.match(
-      /(?:,\s*que\s+|[-–—:]\s*)([\s\S]{5,500}?)(?=\n\s*\*|\n\s*\d+\)|\n\s*[a-dA-D]\)|$)/i
+      /(?:\s+que\s+[«"«]?|[-–—:]\s*)([\s\S]{5,500}?)(?=\n\s*\*|\n\s*\d+\)|\n\s*[a-dA-D]\)|$)/i
     );
-    if (emenMatch) ementa = emenMatch[1].replace(/\s+/g, " ").trim();
+    if (emenMatch) ementa = emenMatch[1].replace(/^[«»""«»]+/, "").replace(/\s+/g, " ").trim();
 
     // Andamento: "* Encaminhar à Comissão de ..."
     let observacao: string | undefined;
     const encMatch = afterMatch.match(/\*\s*Encaminhar\s+[àa]\s+([^\n\r.]+)/i);
     if (encMatch) observacao = encMatch[1].trim();
 
-    // Autor: "autoria Vereador[a] Nome" ou "autoria do Poder Executivo"
+    // Autor: "autoria Vereador[a/es] Nome" ou "autoria do Poder Executivo"
+    // Funciona com e sem vírgula antes do "que"
     let autorNome: string | undefined;
-    const autorMatch = afterMatch.match(/,\s*autoria\s+(?:dos?\s+)?(?:Vereador[a]?\s+)?([^,\n]+?)(?:,|\s+que\b)/i);
+    const autorMatch = afterMatch.match(
+      /,\s*autoria\s+(?:dos?\s+)?(?:Vereadores?\s+)?([^\n,]+?)(?:(?:,\s*)?que\b|\n|$)/i
+    );
     if (autorMatch) autorNome = autorMatch[1].trim();
 
     mapa.set(key, { tipo, numero, ano: parseInt(anoStr), ementa, observacao, dataEnvio, autorNome });

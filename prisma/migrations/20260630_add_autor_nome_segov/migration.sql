@@ -1,0 +1,1 @@
+ALTER TABLE "Segov" ADD COLUMN "autorNome" TEXT;
