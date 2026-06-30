@@ -153,9 +153,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Footer da sidebar */}
-        <div className="p-3 border-t border-red-900">
+        <div className="p-3 border-t border-red-900 space-y-2">
           {sidebarOpen && (
-            <p className="text-red-300 text-xs mb-2 truncate">{session?.user?.name}</p>
+            <p className="text-red-200 text-xs px-1">
+              <span className="text-red-400">Usuário:</span> {session?.user?.name}
+            </p>
           )}
           <button onClick={() => signOut({ callbackUrl: "/login" })}
             className="flex items-center gap-2 text-red-300 hover:text-white text-xs transition w-full px-1">
@@ -184,13 +186,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               </svg>
               Atualizar
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                style={{ background: "#c0392b" }}>
-                {session?.user?.name?.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-sm text-gray-600 hidden sm:block">{session?.user?.name}</span>
-            </div>
           </div>
         </header>
 
