@@ -15,6 +15,8 @@ type ItemExtraido = {
   incluir: boolean
   observacao?: string
   dataEnvio?: string
+  autorNome?: string
+  vereadorId?: string
 }
 
 const MODOS: { id: Modo; label: string; accept: string; ext: string }[] = [
@@ -355,6 +357,9 @@ export default function ImportarSeggovPage() {
                         </span>
                         <span className="font-semibold text-gray-800">{item.numero}/{item.ano}</span>
                       </div>
+                      {item.autorNome && (
+                        <p className="text-xs text-gray-400 mt-0.5">{item.autorNome}</p>
+                      )}
                       {item.jaExiste && (
                         <span className="text-xs text-amber-600 font-medium">Já no SEGOV</span>
                       )}

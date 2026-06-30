@@ -10,6 +10,8 @@ type Proposicao = {
   ementa: string;
   observacao?: string;
   dataEnvio?: string;
+  autorNome?: string;
+  vereadorId?: string;
 };
 
 // Extrai a data da sessão do texto — "23 de junho de 2026" → "2026-06-23"
@@ -64,7 +66,12 @@ function extrairComRegex(texto: string): Proposicao[] {
     const encMatch = afterMatch.match(/\*\s*Encaminhar\s+[àa]\s+([^\n\r.]+)/i);
     if (encMatch) observacao = encMatch[1].trim();
 
-    mapa.set(key, { tipo, numero, ano: parseInt(anoStr), ementa, observacao, dataEnvio });
+    // Autor: "autoria Vereador[a] Nome" ou "autoria do Poder Executivo"
+    let autorNome: string | undefined;
+    const autorMatch = afterMatch.match(/,\s*autoria\s+(?:dos?\s+)?(?:Vereador[a]?\s+)?([^,\n]+?)(?:,|\s+que\b)/i);
+    if (autorMatch) autorNome = autorMatch[1].trim();
+
+    mapa.set(key, { tipo, numero, ano: parseInt(anoStr), ementa, observacao, dataEnvio, autorNome });
   }
 
   let m: RegExpExecArray | null;
@@ -125,15 +132,16 @@ Retorne SOMENTE um JSON válido (sem markdown, sem explicação):
 {
   "dataEnvio": "2026-06-23",
   "proposicoes": [
-    {"tipo":"PL","numero":"2725","ano":2026,"ementa":"Declara Utilidade Pública a Associação...","observacao":"Comissão de Legislação e Justiça"}
+    {"tipo":"PL","numero":"2725","ano":2026,"ementa":"Declara Utilidade Pública a Associação...","observacao":"Comissão de Legislação e Justiça","autorNome":"Nilton Cruz"}
   ]
 }
 
 Regras:
 - tipo: "Projeto de Lei"→PL, "Projeto de Lei Complementar"→PLC, "Projeto de Decreto Legislativo"→PDL, "Requerimento"→REQ, "Indicação"→IND, "Moção"→MOC
 - numero: remova pontos (2.725→"2725")
-- ementa: o que o projeto propõe (começa normalmente com "Declara", "Institui", "Altera", "Dispõe"...)
-- observacao: destino indicado em "* Encaminhar à ..." (apenas o nome da comissão, sem "Comissão de")
+- ementa: o que o projeto propõe (começa com "Declara", "Institui", "Altera", "Dispõe"...)
+- observacao: nome da comissão indicada em "* Encaminhar à ..." (sem "Comissão de")
+- autorNome: apenas o nome do vereador/vereadora autor(a), sem "Vereador" (ex: "Nilton Cruz"). Se for "Poder Executivo", deixe vazio.
 - dataEnvio: data da sessão no formato YYYY-MM-DD`,
           }
         ]
@@ -162,6 +170,7 @@ Regras:
       ementa: p.ementa || "",
       observacao: p.observacao || undefined,
       dataEnvio,
+      autorNome: p.autorNome || undefined,
     }));
     return { proposicoes, dataEnvio };
   } catch {
@@ -219,6 +228,26 @@ export async function POST(req: Request) {
   if (proposicoes.length === 0) {
     return NextResponse.json({ proposicoes: [], total: 0, dataEnvio });
   }
+
+  // Tenta associar vereador pelo nome extraído
+  const vereadores = await prisma.vereador.findMany({ select: { id: true, nome: true } });
+
+  function matchVereador(autorNome?: string): string | undefined {
+    if (!autorNome) return undefined;
+    const lower = autorNome.toLowerCase().trim();
+    if (lower.includes("executivo") || lower.includes("prefeitura")) return undefined;
+    const palavras = lower.split(/\s+/).filter(p => p.length > 3);
+    const found = vereadores.find(v => {
+      const nomeV = v.nome.toLowerCase();
+      return palavras.some(p => nomeV.includes(p));
+    });
+    return found?.id;
+  }
+
+  proposicoes = proposicoes.map(p => ({
+    ...p,
+    vereadorId: p.vereadorId ?? matchVereador(p.autorNome),
+  }));
 
   // Verifica quais já existem no SEGOV
   const existentes = await Promise.all(
