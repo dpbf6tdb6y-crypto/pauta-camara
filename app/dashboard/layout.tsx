@@ -172,6 +172,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         {/* Topbar — fixo no topo */}
         <header className="bg-white shadow-sm px-5 py-2 flex items-center justify-between flex-shrink-0 sticky top-0 z-40">
           <TopbarLeft />
+          <TopbarRight />
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.location.reload()}
@@ -204,6 +205,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 function TopbarLeft() {
   const { leftContent } = useTopbar()
   return <div className="flex-1 flex items-center">{leftContent}</div>
+}
+
+function TopbarRight() {
+  const { rightContent } = useTopbar()
+  if (!rightContent) return null
+  return <div className="flex items-center mr-2">{rightContent}</div>
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

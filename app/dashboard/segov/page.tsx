@@ -17,7 +17,7 @@ const STATUS_COR: Record<string, string> = {
 }
 
 export default function SeggovPage() {
-  const { setLeftContent } = useTopbar()
+  const { setLeftContent, setRightContent } = useTopbar()
   const [itens, setItens] = useState<any[]>([])
   const [vereadores, setVereadores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -111,6 +111,10 @@ export default function SeggovPage() {
   const todosSelecionados = itensExibidos.length > 0 && itensExibidos.every(i => selecionados.has(i.id))
   const algunsSelecionados = itensExibidos.some(i => selecionados.has(i.id)) && !todosSelecionados
 
+  const itensParaExportar = selecionados.size > 0
+    ? itensExibidos.filter(i => selecionados.has(i.id))
+    : itensExibidos
+
   // Injeta título + botões no topbar global
   useEffect(() => {
     setLeftContent(
@@ -128,7 +132,7 @@ export default function SeggovPage() {
           </Link>
           <button onClick={() => setModalRelatorio(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
-            Relatórios
+            {selecionados.size > 0 ? `Relatório (${selecionados.size} selecionado${selecionados.size > 1 ? 's' : ''})` : 'Relatórios'}
           </button>
           <Link href="/dashboard/segov/importar"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
@@ -138,7 +142,26 @@ export default function SeggovPage() {
       </div>
     )
     return () => setLeftContent(null)
-  }, [itensExibidos])
+  }, [itensExibidos, selecionados])
+
+  // Botão Excluir no lado direito do topbar (antes do Atualizar)
+  useEffect(() => {
+    if (selecionados.size === 0) {
+      setRightContent(null)
+      return
+    }
+    setRightContent(
+      <button onClick={excluirSelecionados} disabled={excluindo}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition disabled:opacity-60">
+        {excluindo
+          ? <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+        }
+        Excluir {selecionados.size} selecionado{selecionados.size > 1 ? 's' : ''}
+      </button>
+    )
+    return () => setRightContent(null)
+  }, [selecionados, excluindo])
 
   function toggleColuna(key: ColunasKey) {
     setColunasSel(prev => {
@@ -151,42 +174,13 @@ export default function SeggovPage() {
   function exportar() {
     const cols = COLUNAS_RELATORIO.map(c => c.key).filter(k => colunasSel.has(k))
     if (cols.length === 0) return
-    if (formatoRelatorio === 'excel') exportarSegovExcel(itensExibidos, cols, 'segov.xlsx')
-    else exportarSegovPDF(itensExibidos, cols, 'segov.pdf')
+    if (formatoRelatorio === 'excel') exportarSegovExcel(itensParaExportar, cols, 'segov.xlsx')
+    else exportarSegovPDF(itensParaExportar, cols, 'segov.pdf')
     setModalRelatorio(false)
   }
 
   return (
     <div className="space-y-2">
-
-      {/* Barra de seleção */}
-      {selecionados.size > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
-          <span className="text-sm font-medium text-red-800">
-            {selecionados.size} {selecionados.size === 1 ? 'item selecionado' : 'itens selecionados'}
-          </span>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSelecionados(new Set())}
-              className="text-sm text-gray-500 hover:text-gray-700 transition">
-              Cancelar
-            </button>
-            <button onClick={excluirSelecionados} disabled={excluindo}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition disabled:opacity-60">
-              {excluindo ? (
-                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              )}
-              Excluir selecionados
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Tabela */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-80px)]">
@@ -358,7 +352,13 @@ export default function SeggovPage() {
               <span className="ml-1">de {itens.length}</span>
             )}
             {selecionados.size > 0 && (
-              <span className="ml-2 text-red-600 font-medium">· {selecionados.size} selecionado(s)</span>
+              <>
+                <span className="ml-2 text-red-600 font-medium">· {selecionados.size} selecionado(s)</span>
+                <button onClick={() => setSelecionados(new Set())}
+                  className="ml-2 text-gray-400 hover:text-gray-600 text-xs underline">
+                  Limpar seleção
+                </button>
+              </>
             )}
           </div>
         )}
