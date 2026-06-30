@@ -158,7 +158,7 @@ export default function SeggovPage() {
       )}
 
       {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-260px)]">
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <div className="w-8 h-8 border-4 border-red-800 border-t-transparent rounded-full animate-spin" />
@@ -174,7 +174,7 @@ export default function SeggovPage() {
         ) : (
           <table className="w-full min-w-[1400px] text-sm">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
+              <tr className="border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
                 <th className="w-10 px-4 py-3">
                   <input type="checkbox"
                     checked={todosSelecionados}
