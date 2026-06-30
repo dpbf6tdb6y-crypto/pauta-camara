@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { exportarSegovExcel, exportarSegovPDF } from '@/lib/segov-export'
 
 const TIPOS = ['PL', 'PLC', 'PDL', 'REQ', 'IND', 'MOC']
 const STATUS_LIST = ['Aguardando', 'Com Parecer', 'Em análise', 'Aprovado', 'Rejeitado', 'Arquivado', 'Retirado']
@@ -24,6 +25,7 @@ export default function SeggovPage() {
   const [filtroVereador, setFiltroVereador] = useState('')
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [excluindo, setExcluindo] = useState(false)
+  const [menuRelatorios, setMenuRelatorios] = useState(false)
 
   // Filtros por coluna (busca livre, aplicados sobre os itens já carregados)
   const [colProposicao, setColProposicao] = useState('')
@@ -120,6 +122,39 @@ export default function SeggovPage() {
           <p className="text-sm text-gray-500">Secretaria de Governo — proposições e status</p>
         </div>
         <div className="flex gap-2">
+          <div className="relative">
+            <button onClick={() => setMenuRelatorios(v => !v)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6h6v6m-9 4h12a2 2 0 002-2V7.414a1 1 0 00-.293-.707l-3.414-3.414A1 1 0 0015.586 3H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Relatórios
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {menuRelatorios && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuRelatorios(false)} />
+                <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                  <button onClick={() => { exportarSegovExcel(itensExibidos, 'segov.xlsx'); setMenuRelatorios(false) }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition text-left">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M3 3h18v18H3V3z" />
+                    </svg>
+                    Exportar Excel ({itensExibidos.length})
+                  </button>
+                  <button onClick={() => { exportarSegovPDF(itensExibidos, 'segov.pdf'); setMenuRelatorios(false) }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition text-left border-t border-gray-100">
+                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Exportar PDF ({itensExibidos.length})
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <Link href="/dashboard/segov/importar"
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
