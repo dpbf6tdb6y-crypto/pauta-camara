@@ -158,7 +158,7 @@ export default function SeggovPage() {
       )}
 
       {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <div className="w-8 h-8 border-4 border-red-800 border-t-transparent rounded-full animate-spin" />
@@ -172,7 +172,7 @@ export default function SeggovPage() {
             <p className="text-sm mt-1">Cadastre um novo item ou ajuste os filtros</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[1200px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="w-10 px-4 py-3">
@@ -182,14 +182,14 @@ export default function SeggovPage() {
                     onChange={toggleTodos}
                     className="w-4 h-4 accent-red-800 cursor-pointer" />
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Proposição</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-32">Proposição</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Ementa</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Vereador</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-64">Comissão</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Entrada</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Última movimentação</th>
-                <th className="px-4 py-3" />
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-36">Vereador</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-56">Comissão</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Status</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-24">Entrada</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Última mov.</th>
+                <th className="px-4 py-3 w-16" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -216,7 +216,7 @@ export default function SeggovPage() {
                           : <span className="text-gray-400">—</span>
                       }
                     </td>
-                    <td className="px-4 py-3 text-xs w-64 space-y-1">
+                    <td className="px-4 py-3 text-xs space-y-1">
                       {item.observacao && (
                         <div title={item.observacao} className="text-gray-500">{item.observacao}</div>
                       )}
