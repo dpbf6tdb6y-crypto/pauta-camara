@@ -131,7 +131,7 @@ export default function SeggovPage() {
             + Nova SEGOV
           </Link>
           <button onClick={() => setModalRelatorio(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition">
             {selecionados.size > 0 ? `Relatório (${selecionados.size} selecionado${selecionados.size > 1 ? 's' : ''})` : 'Relatórios'}
           </button>
           <Link href="/dashboard/segov/importar"
