@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { exportarSegovExcel, exportarSegovPDF, COLUNAS_RELATORIO, type ColunasKey } from '@/lib/segov-export'
 import { useTopbar } from '@/contexts/topbar'
@@ -18,6 +19,7 @@ const STATUS_COR: Record<string, string> = {
 
 export default function SeggovPage() {
   const { setLeftContent, setRightContent } = useTopbar()
+  const router = useRouter()
   const [itens, setItens] = useState<any[]>([])
   const [vereadores, setVereadores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -271,7 +273,7 @@ export default function SeggovPage() {
                 const sel = selecionados.has(item.id)
                 return (
                   <tr key={item.id}
-                    onClick={() => toggleItem(item.id)}
+                    onClick={() => router.push(`/dashboard/segov/${item.id}/editar`)}
                     className={`transition cursor-pointer ${sel ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       <input type="checkbox" checked={sel} onChange={() => toggleItem(item.id)}
