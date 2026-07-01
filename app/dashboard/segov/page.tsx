@@ -284,9 +284,6 @@ export default function SeggovPage() {
                       <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
                         {item.status}
                       </span>
-                      {item.dataEnvio && (
-                        <span className="text-xs text-gray-400">Entrada: {new Date(item.dataEnvio).toLocaleDateString('pt-BR')}</span>
-                      )}
                       {pautadoDoneAt && (
                         <span className="text-xs text-gray-400">Pautado: {new Date(pautadoDoneAt).toLocaleDateString('pt-BR')}</span>
                       )}
