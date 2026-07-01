@@ -375,7 +375,7 @@ export default function EditarSeggovPage() {
           )}
 
           {/* ── Checklist de etapas (agrupado) ── */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {([
               { cols: 'grid-cols-2', keys: ['protocolado', 'pautado'] },
               { cols: 'grid-cols-3', keys: ['comissao1', 'comissao2', 'comissao3'] },
@@ -383,7 +383,7 @@ export default function EditarSeggovPage() {
               { cols: 'grid-cols-1', keys: ['comissaoEspecial'] },
               { cols: 'grid-cols-4', keys: ['pedidoVista', 'pedidoAdiamento', 'votacao1', 'votacao2'] },
             ] as { cols: string; keys: string[] }[]).map((grupo, gi) => (
-              <div key={gi} className={`grid ${grupo.cols} gap-3 items-start`}>
+              <div key={gi} className={`grid ${grupo.cols} gap-4 items-start`}>
                 {grupo.keys.map(key => {
                   const def = FLUXO_DEF.find(d => d.key === key)!
                   const idx = FLUXO_DEF.indexOf(def)
@@ -409,7 +409,7 @@ export default function EditarSeggovPage() {
                         className="text-xs px-2.5 py-1 rounded-md bg-green-500 text-white hover:bg-green-600 transition font-medium shadow-sm whitespace-nowrap flex-shrink-0">Marcar</button>
 
                   return (
-                    <div key={def.key} className={`rounded-lg border transition-all ${done ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
+                    <div key={def.key} className={`rounded-xl border-2 shadow-sm transition-all ${done ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'}`}>
                       {inline ? (
                         // Layout inline: label + inputs na mesma linha
                         <div className="flex items-center gap-3 p-3">
