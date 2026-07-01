@@ -1,5 +1,5 @@
 'use client'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { exportarSegovExcel, exportarSegovPDF, COLUNAS_RELATORIO, type ColunasKey } from '@/lib/segov-export'
@@ -193,204 +193,163 @@ export default function SeggovPage() {
   return (
     <div className="space-y-2">
 
-      {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-x-scroll overflow-y-auto max-h-[calc(100vh-80px)]">
-        {loading ? (
-          <div className="flex justify-center items-center py-16">
-            <div className="w-8 h-8 border-4 border-red-800 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : itens.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      {/* Barra de filtros */}
+      <div className="bg-white rounded-xl border border-gray-200 p-3 flex gap-2 items-center flex-wrap sticky top-0 z-10">
+        {filtrosColunaAtivos && (
+          <button onClick={limparFiltrosColuna} title="Limpar filtros"
+            className="text-gray-400 hover:text-red-600 transition flex-shrink-0">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-            <p className="font-medium">Nenhum item encontrado</p>
-            <p className="text-sm mt-1">Cadastre um novo item ou ajuste os filtros</p>
-          </div>
-        ) : (
-          <table className="w-full min-w-[1400px] text-sm border-separate border-spacing-y-0.5">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
-                <th className="w-10 px-4 py-3">
-                  <input type="checkbox"
-                    checked={todosSelecionados}
-                    ref={el => { if (el) el.indeterminate = algunsSelecionados }}
-                    onChange={toggleTodos}
-                    className="w-4 h-4 accent-red-800 cursor-pointer" />
-                </th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-32">Proposição</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 min-w-[420px]">Ementa</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-36">Vereador</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-24">Entrada</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Pautado em</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Dias em aberto</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-28">Última mov.</th>
-              </tr>
-              <tr className="border-b border-gray-100 bg-gray-50/70 sticky top-[45px] z-10">
-                <th className="px-4 py-2">
-                  {filtrosColunaAtivos && (
-                    <button onClick={limparFiltrosColuna} title="Limpar filtros de coluna"
-                      className="text-gray-400 hover:text-red-600 transition">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </th>
-                <th className="px-4 py-2">
-                  <input value={colProposicao} onChange={e => setColProposicao(e.target.value)}
-                    placeholder="Buscar nº..."
-                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30" />
-                </th>
-                <th className="px-4 py-2">
-                  <input value={colEmenta} onChange={e => setColEmenta(e.target.value)}
-                    placeholder="Buscar palavra ou frase na ementa..."
-                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30" />
-                </th>
-                <th className="px-4 py-2">
-                  <input value={colVereador} onChange={e => setColVereador(e.target.value)}
-                    placeholder="Buscar nome..."
-                    className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30" />
-                </th>
-                <th className="px-4 py-2">
-                  <select value={colStatus} onChange={e => setColStatus(e.target.value)}
-                    className="w-full border border-gray-200 rounded px-1 py-1 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-red-800/30">
-                    <option value="">Todos</option>
-                    {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </th>
-                <th className="px-4 py-2" />
-                <th className="px-4 py-2" />
-                <th className="px-4 py-2" />
-                <th className="px-4 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {itensExibidos.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-gray-400 text-sm">
-                    Nenhum item corresponde aos filtros de coluna.{' '}
-                    <button onClick={limparFiltrosColuna} className="text-red-700 hover:underline">Limpar filtros</button>
-                  </td>
-                </tr>
-              )}
-              {itensExibidos.map((item: any) => {
-                const sel = selecionados.has(item.id)
-                const fluxo = (item.fluxo || {}) as Record<string, { done: boolean; doneAt?: string }>
-                const marcados = FLUXO_DEF.filter(d => fluxo[d.key]?.done)
-                return (
-                  <Fragment key={item.id}>
-                    <tr
-                      onClick={() => router.push(`/dashboard/segov/${item.id}/editar`)}
-                      className={`transition cursor-pointer ring-1 ${marcados.length > 0 ? 'border-b-0' : ''} ${sel ? 'bg-red-50 ring-green-400' : 'ring-green-200 hover:ring-green-400 hover:bg-gray-50'}`}>
-                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        <input type="checkbox" checked={sel} onChange={() => toggleItem(item.id)}
-                          className="w-4 h-4 accent-red-800 cursor-pointer" />
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-gray-800 whitespace-nowrap">
-                        <span className="text-xs bg-red-100 text-red-800 rounded px-1.5 py-0.5 mr-1.5">{item.tipo}</span>
-                        {item.numero}/{item.ano}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 text-justify">{item.ementa}</td>
-                      <td className="px-4 py-3">
-                        {item.vereador?.nome
-                          ? <span className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded whitespace-nowrap">
-                              {item.vereador.nome}
-                            </span>
-                          : item.autorNome
-                            ? <div className="flex flex-col gap-1">
-                                {item.autorNome.split(/\s+e\s+|,\s+/).map((nome: string, i: number) => (
-                                  <span key={i} className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded whitespace-nowrap">
-                                    {nome.trim()}
-                                  </span>
-                                ))}
-                              </div>
-                            : <span className="text-gray-400">—</span>
-                        }
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
-                        {item.dataEnvio ? new Date(item.dataEnvio).toLocaleDateString('pt-BR') : '—'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
-                        {fluxo['pautado']?.doneAt
-                          ? new Date(fluxo['pautado'].doneAt).toLocaleDateString('pt-BR')
-                          : <span className="text-gray-300">—</span>}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-xs">
-                        {fluxo['pautado']?.doneAt
-                          ? (() => {
-                              const dias = Math.floor((Date.now() - new Date(fluxo['pautado'].doneAt!).getTime()) / 86400000)
-                              return (
-                                <span className={`font-bold ${dias > 30 ? 'text-red-600' : dias > 15 ? 'text-yellow-600' : 'text-green-600'}`}>
-                                  {dias}d
-                                </span>
-                              )
-                            })()
-                          : <span className="text-gray-300">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs">
-                        {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('pt-BR') : '—'}
-                      </td>
-                    </tr>
-                    {marcados.length > 0 && (
-                      <tr
-                        onClick={() => router.push(`/dashboard/segov/${item.id}/editar`)}
-                        className={`cursor-pointer transition ${sel ? 'bg-red-50' : 'bg-white hover:bg-gray-50'}`}>
-                        <td colSpan={9} className="px-6 pb-2 pt-0">
-                          <div className="flex items-center">
-                            {marcados.map((def, i) => {
-                              const st = fluxo[def.key]
-                              return (
-                                <div key={def.key} className="flex items-center">
-                                  {i > 0 && <div className="w-6 h-px bg-green-300 flex-shrink-0" />}
-                                  <div className="flex flex-col items-center gap-0.5">
-                                    <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center shadow-sm shadow-green-200 flex-shrink-0">
-                                      <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    </div>
-                                    <span className="text-[10px] text-gray-500 whitespace-nowrap leading-tight">{def.labelCurto}</span>
-                                    {st.doneAt && (
-                                      <span className="text-[9px] text-gray-400 whitespace-nowrap leading-tight">{fmtFluxoData(st.doneAt)}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                )
-              })}
-            </tbody>
-          </table>
+          </button>
         )}
-        {!loading && itens.length > 0 && (
-          <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-400">
-            {itensExibidos.length} {itensExibidos.length === 1 ? 'item' : 'itens'}
-            {filtrosColunaAtivos && itensExibidos.length !== itens.length && (
-              <span className="ml-1">de {itens.length}</span>
-            )}
-            {selecionados.size > 0 && (
-              <>
-                <span className="ml-2 text-red-600 font-medium">· {selecionados.size} selecionado(s)</span>
-                <button onClick={() => setSelecionados(new Set())}
-                  className="ml-2 text-gray-400 hover:text-gray-600 text-xs underline">
-                  Limpar seleção
-                </button>
-              </>
-            )}
-          </div>
-        )}
+        <input value={colProposicao} onChange={e => setColProposicao(e.target.value)}
+          placeholder="Buscar nº..."
+          className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-800/30 w-28" />
+        <input value={colEmenta} onChange={e => setColEmenta(e.target.value)}
+          placeholder="Buscar palavra na ementa..."
+          className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-800/30 flex-1 min-w-[180px]" />
+        <input value={colVereador} onChange={e => setColVereador(e.target.value)}
+          placeholder="Buscar vereador..."
+          className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-800/30 w-36" />
+        <select value={colStatus} onChange={e => setColStatus(e.target.value)}
+          className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-800/30 w-32">
+          <option value="">Todos os status</option>
+          {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <div className="ml-auto flex items-center gap-2">
+          <input type="checkbox"
+            checked={todosSelecionados}
+            ref={el => { if (el) el.indeterminate = algunsSelecionados }}
+            onChange={toggleTodos}
+            className="w-4 h-4 accent-red-800 cursor-pointer" />
+          <span className="text-xs text-gray-500">
+            {!loading && `${itensExibidos.length}${filtrosColunaAtivos && itensExibidos.length !== itens.length ? ` de ${itens.length}` : ''} item(s)`}
+          </span>
+          {selecionados.size > 0 && (
+            <button onClick={() => setSelecionados(new Set())}
+              className="text-xs text-red-600 font-medium hover:underline">
+              · {selecionados.size} selecionado(s) ✕
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Lista de cards */}
+      {loading ? (
+        <div className="flex justify-center items-center py-16">
+          <div className="w-8 h-8 border-4 border-red-800 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : itens.length === 0 ? (
+        <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200">
+          <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="font-medium">Nenhum item encontrado</p>
+          <p className="text-sm mt-1">Cadastre um novo item ou ajuste os filtros</p>
+        </div>
+      ) : itensExibidos.length === 0 ? (
+        <div className="text-center py-10 text-gray-400 bg-white rounded-xl border border-gray-200 text-sm">
+          Nenhum item corresponde aos filtros.{' '}
+          <button onClick={limparFiltrosColuna} className="text-red-700 hover:underline">Limpar filtros</button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {itensExibidos.map((item: any) => {
+            const sel = selecionados.has(item.id)
+            const fluxo = (item.fluxo || {}) as Record<string, { done: boolean; doneAt?: string; data?: any }>
+            const marcados = FLUXO_DEF
+              .filter(d => fluxo[d.key]?.done)
+              .map(d => ({ ...d, doneAt: fluxo[d.key]?.doneAt, data: fluxo[d.key]?.data }))
+            const pautadoDoneAt = fluxo['pautado']?.doneAt
+            const diasAberto = pautadoDoneAt
+              ? Math.floor((Date.now() - new Date(pautadoDoneAt).getTime()) / 86400000)
+              : null
+
+            return (
+              <div key={item.id}
+                className={`rounded-xl border-2 transition-all ${sel ? 'border-green-400 bg-green-50' : 'border-green-200 bg-white hover:border-green-300'}`}>
+                {/* Cabeçalho do card */}
+                <div className="flex items-start gap-3 p-4 cursor-pointer"
+                  onClick={() => router.push(`/dashboard/segov/${item.id}/editar`)}>
+                  <div onClick={e => e.stopPropagation()} className="mt-0.5 flex-shrink-0">
+                    <input type="checkbox" checked={sel} onChange={() => toggleItem(item.id)}
+                      className="w-4 h-4 accent-red-800 cursor-pointer" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {/* Linha 1: tipo, número, status, datas */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs bg-red-100 text-red-800 rounded px-1.5 py-0.5 font-medium">{item.tipo}</span>
+                      <span className="font-bold text-gray-800">{item.numero}/{item.ano}</span>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${STATUS_COR[item.status] || 'bg-gray-100 text-gray-700'}`}>
+                        {item.status}
+                      </span>
+                      {item.dataEnvio && (
+                        <span className="text-xs text-gray-400">Entrada: {new Date(item.dataEnvio).toLocaleDateString('pt-BR')}</span>
+                      )}
+                      {pautadoDoneAt && (
+                        <span className="text-xs text-gray-400">Pautado: {new Date(pautadoDoneAt).toLocaleDateString('pt-BR')}</span>
+                      )}
+                      {diasAberto !== null && (
+                        <span className={`text-xs font-bold ${diasAberto > 30 ? 'text-red-600' : diasAberto > 15 ? 'text-yellow-600' : 'text-green-600'}`}>
+                          {diasAberto}d em aberto
+                        </span>
+                      )}
+                    </div>
+                    {/* Ementa */}
+                    <p className="text-sm text-gray-600 mt-1.5 leading-snug">{item.ementa}</p>
+                    {/* Autores */}
+                    {(item.vereador?.nome || item.autorNome) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {item.vereador?.nome
+                          ? <span className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{item.vereador.nome}</span>
+                          : item.autorNome.split(/\s+e\s+|,\s+/).map((nome: string, i: number) => (
+                              <span key={i} className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{nome.trim()}</span>
+                            ))
+                        }
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Gráfico de tramitação — idêntico à tela de edição */}
+                {marcados.length > 0 && (
+                  <div className="border-t border-green-100 px-4 pb-4 pt-3 overflow-x-auto cursor-pointer"
+                    onClick={() => router.push(`/dashboard/segov/${item.id}/editar`)}>
+                    <div className="flex items-start" style={{ gap: 0 }}>
+                      {marcados.map((step, idx) => (
+                        <div key={step.key} className="flex items-start flex-shrink-0">
+                          <div className="flex flex-col items-center" style={{ minWidth: '88px' }}>
+                            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-md shadow-green-200">
+                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                            <p className="text-xs font-semibold text-gray-700 mt-1.5 text-center leading-tight px-1">{step.labelCurto}</p>
+                            <p className="text-xs text-gray-400 text-center mt-0.5">{fmtFluxoData(step.doneAt)}</p>
+                            {step.data?.comissaoNome && (
+                              <span className="mt-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium text-center">{step.data.comissaoNome}</span>
+                            )}
+                            {step.data?.nome1 && !step.data?.comissaoNome && (
+                              <span className="mt-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-center truncate max-w-[80px]">{step.data.nome1}</span>
+                            )}
+                          </div>
+                          {idx < marcados.length - 1 && (
+                            <div className="flex-shrink-0 mt-5">
+                              <div className="h-0.5 w-6 bg-green-400" />
+                              <div className="w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-l-[6px] border-l-green-400 -mt-[3.5px] ml-6" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Modal de seleção de colunas para relatório */}
       {modalRelatorio && (
