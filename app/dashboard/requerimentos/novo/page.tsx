@@ -4,38 +4,31 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 const STATUS_LIST = ['Aguardando', 'Em andamento', 'Respondido', 'Arquivado']
-
 type Opcao = { id: string; nome: string }
 
 export default function NovoRequerimentoPage() {
   const router = useRouter()
   const [salvando, setSalvando] = useState(false)
+  const [vereadores, setVereadores] = useState<Opcao[]>([])
   const [origens, setOrigens] = useState<Opcao[]>([])
   const [categorias, setCategorias] = useState<Opcao[]>([])
   const [secretarias, setSecretarias] = useState<Opcao[]>([])
 
   const hoje = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({
-    data: hoje,
-    texto: '',
-    status: 'Aguardando',
-    relevancia: '',
-    origem: '',
-    categoria: '',
-    secretaria: '',
-    dataConclusao: '',
-    documentos: '',
+    data: hoje, texto: '', status: 'Aguardando', relevancia: '',
+    vereadorId: '', origem: '', categoria: '', secretaria: '',
+    dataConclusao: '', documentos: '',
   })
 
   useEffect(() => {
+    fetch('/api/vereadores?poder=legislativo').then(r => r.json()).then(setVereadores)
     fetch('/api/config-opcoes?tipo=origem').then(r => r.json()).then(setOrigens)
     fetch('/api/config-opcoes?tipo=categoria').then(r => r.json()).then(setCategorias)
     fetch('/api/config-opcoes?tipo=secretaria').then(r => r.json()).then(setSecretarias)
   }, [])
 
-  function set(field: string, value: string) {
-    setForm(f => ({ ...f, [field]: value }))
-  }
+  function set(field: string, value: string) { setForm(f => ({ ...f, [field]: value })) }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
@@ -51,7 +44,6 @@ export default function NovoRequerimentoPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-5 pb-8">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/dashboard/requerimentos" className="text-gray-400 hover:text-gray-600 transition">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,50 +57,46 @@ export default function NovoRequerimentoPage() {
       </div>
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-        {/* Linha 1: REF (auto) | STATUS | RELEVÂNCIA */}
+
+        {/* Linha 1: REF | STATUS | RELEVÂNCIA */}
         <div className="grid grid-cols-3 gap-5">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Ref. Requerimento
-            </label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ref. Requerimento</label>
             <input disabled value="(gerado automaticamente)"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50 cursor-not-allowed" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Status <span className="text-red-500">*</span>
-            </label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status <span className="text-red-500">*</span></label>
             <select required value={form.status} onChange={e => set('status', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
               {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Peso / Relevância
-            </label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Peso / Relevância</label>
             <div className="flex gap-2">
               {['Alto', 'Médio', 'Baixo'].map(r => (
-                <button key={r} type="button"
-                  onClick={() => set('relevancia', form.relevancia === r ? '' : r)}
+                <button key={r} type="button" onClick={() => set('relevancia', form.relevancia === r ? '' : r)}
                   className={`flex-1 py-2 rounded-lg text-sm font-semibold border-2 transition ${
                     form.relevancia === r
-                      ? r === 'Alto' ? 'border-red-500 bg-red-500 text-white'
-                        : r === 'Médio' ? 'border-orange-400 bg-orange-400 text-white'
-                        : 'border-green-500 bg-green-500 text-white'
-                      : r === 'Alto' ? 'border-red-200 text-red-600 bg-white'
-                        : r === 'Médio' ? 'border-orange-200 text-orange-500 bg-white'
-                        : 'border-green-200 text-green-600 bg-white'
-                  }`}>
-                  {r}
-                </button>
+                      ? r === 'Alto' ? 'border-red-500 bg-red-500 text-white' : r === 'Médio' ? 'border-orange-400 bg-orange-400 text-white' : 'border-green-500 bg-green-500 text-white'
+                      : r === 'Alto' ? 'border-red-200 text-red-600 bg-white' : r === 'Médio' ? 'border-orange-200 text-orange-500 bg-white' : 'border-green-200 text-green-600 bg-white'
+                  }`}>{r}</button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Linha 2: ORIGEM | CATEGORIA | SECRETARIA */}
-        <div className="grid grid-cols-3 gap-5">
+        {/* Linha 2: AUTOR | ORIGEM | CATEGORIA | SECRETARIA */}
+        <div className="grid grid-cols-4 gap-5">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor (Vereador)</label>
+            <select value={form.vereadorId} onChange={e => set('vereadorId', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+              <option value="">Selecione...</option>
+              {vereadores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+            </select>
+          </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Origem</label>
             <select value={form.origem} onChange={e => set('origem', e.target.value)}
@@ -143,9 +131,7 @@ export default function NovoRequerimentoPage() {
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50 cursor-not-allowed" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Data <span className="text-red-500">*</span>
-            </label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data <span className="text-red-500">*</span></label>
             <input required type="date" value={form.data} onChange={e => set('data', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
           </div>
@@ -167,15 +153,12 @@ export default function NovoRequerimentoPage() {
 
         {/* Linha 5: REQUERIMENTO */}
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-            Requerimento <span className="text-red-500">*</span>
-          </label>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Requerimento <span className="text-red-500">*</span></label>
           <textarea required rows={5} value={form.texto} onChange={e => set('texto', e.target.value)}
             placeholder="Descreva detalhadamente o requerimento..."
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 resize-none" />
         </div>
 
-        {/* Botões */}
         <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
           <Link href="/dashboard/requerimentos"
             className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">

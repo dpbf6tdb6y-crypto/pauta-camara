@@ -8,7 +8,7 @@ type Item = {
   status: string; relevancia: string | null; origem: string | null
   categoria: string | null; secretaria: string | null
   dataConclusao: string | null; documentos: string | null
-  createdAt: string
+  createdAt: string; vereador: { id: string; nome: string } | null
 }
 
 const STATUS_CHIP: Record<string, string> = {
@@ -120,6 +120,11 @@ export default function TagsPage() {
                 <p className="text-sm text-gray-700 mt-1 line-clamp-2">{item.pedido}</p>
 
                 <div className="flex gap-3 mt-1.5 flex-wrap">
+                  {item.vereador && (
+                    <span className="text-xs font-medium border px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border-indigo-200">
+                      {item.vereador.nome}
+                    </span>
+                  )}
                   {item.origem && <span className="text-xs text-gray-400">Origem: <span className="text-gray-600">{item.origem}</span></span>}
                   {item.categoria && <span className="text-xs text-gray-400">Categoria: <span className="text-gray-600">{item.categoria}</span></span>}
                   {item.secretaria && <span className="text-xs text-gray-400">Secretaria: <span className="text-gray-600">{item.secretaria}</span></span>}

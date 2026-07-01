@@ -34,6 +34,8 @@ model Vereador {
   votosPareceres VotoParecerVereador[]
   emendas        Emenda[]             @relation("EmendaAutorVereador")
   segov          Segov[]
+  requerimentos  Requerimento[]       @relation("RequerimentoAutor")
+  tags           Tag[]                @relation("TagAutor")
 }
 
 model Comissao {
@@ -226,6 +228,7 @@ model Requerimento {
   texto         String
   status        String    @default("Aguardando")
   relevancia    String?
+  vereadorId    String?
   origem        String?
   categoria     String?
   secretaria    String?
@@ -233,6 +236,8 @@ model Requerimento {
   documentos    String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  vereador Vereador? @relation("RequerimentoAutor", fields: [vereadorId], references: [id])
 }
 
 model Tag {
@@ -242,6 +247,7 @@ model Tag {
   pedido        String
   status        String    @default("Aguardando")
   relevancia    String?
+  vereadorId    String?
   origem        String?
   categoria     String?
   secretaria    String?
@@ -249,4 +255,6 @@ model Tag {
   documentos    String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  vereador Vereador? @relation("TagAutor", fields: [vereadorId], references: [id])
 }

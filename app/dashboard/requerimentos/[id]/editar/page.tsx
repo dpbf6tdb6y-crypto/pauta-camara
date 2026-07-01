@@ -13,21 +13,23 @@ export default function EditarRequerimentoPage() {
   const [salvando, setSalvando] = useState(false)
   const [referencia, setReferencia] = useState('')
   const [dataCadastro, setDataCadastro] = useState('')
+  const [vereadores, setVereadores] = useState<Opcao[]>([])
   const [origens, setOrigens] = useState<Opcao[]>([])
   const [categorias, setCategorias] = useState<Opcao[]>([])
   const [secretarias, setSecretarias] = useState<Opcao[]>([])
   const [form, setForm] = useState({
     data: '', texto: '', status: 'Aguardando', relevancia: '',
-    origem: '', categoria: '', secretaria: '', dataConclusao: '', documentos: '',
+    vereadorId: '', origem: '', categoria: '', secretaria: '', dataConclusao: '', documentos: '',
   })
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/requerimentos/${id}`).then(r => r.json()),
+      fetch('/api/vereadores?poder=legislativo').then(r => r.json()),
       fetch('/api/config-opcoes?tipo=origem').then(r => r.json()),
       fetch('/api/config-opcoes?tipo=categoria').then(r => r.json()),
       fetch('/api/config-opcoes?tipo=secretaria').then(r => r.json()),
-    ]).then(([item, ors, cats, secs]) => {
+    ]).then(([item, vers, ors, cats, secs]) => {
       setReferencia(item.referencia)
       setDataCadastro(new Date(item.createdAt).toLocaleDateString('pt-BR'))
       setForm({
@@ -35,13 +37,14 @@ export default function EditarRequerimentoPage() {
         texto: item.texto || '',
         status: item.status || 'Aguardando',
         relevancia: item.relevancia || '',
+        vereadorId: item.vereadorId || '',
         origem: item.origem || '',
         categoria: item.categoria || '',
         secretaria: item.secretaria || '',
         dataConclusao: item.dataConclusao ? item.dataConclusao.split('T')[0] : '',
         documentos: item.documentos || '',
       })
-      setOrigens(ors); setCategorias(cats); setSecretarias(secs)
+      setVereadores(vers); setOrigens(ors); setCategorias(cats); setSecretarias(secs)
       setCarregando(false)
     })
   }, [id])
@@ -81,6 +84,8 @@ export default function EditarRequerimentoPage() {
       </div>
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+
+        {/* Linha 1: REF | STATUS | RELEVÂNCIA */}
         <div className="grid grid-cols-3 gap-5">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ref. Requerimento</label>
@@ -109,7 +114,16 @@ export default function EditarRequerimentoPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-5">
+        {/* Linha 2: AUTOR | ORIGEM | CATEGORIA | SECRETARIA */}
+        <div className="grid grid-cols-4 gap-5">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor (Vereador)</label>
+            <select value={form.vereadorId} onChange={e => set('vereadorId', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+              <option value="">Selecione...</option>
+              {vereadores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+            </select>
+          </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Origem</label>
             <select value={form.origem} onChange={e => set('origem', e.target.value)}
@@ -136,6 +150,7 @@ export default function EditarRequerimentoPage() {
           </div>
         </div>
 
+        {/* Linha 3: DATA CADASTRO | DATA | DATA CONCLUSÃO */}
         <div className="grid grid-cols-3 gap-5">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data de Cadastro</label>
@@ -155,6 +170,7 @@ export default function EditarRequerimentoPage() {
           </div>
         </div>
 
+        {/* Linha 4: DOCUMENTOS */}
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Documento(s)</label>
           <input value={form.documentos} onChange={e => set('documentos', e.target.value)}
@@ -162,6 +178,7 @@ export default function EditarRequerimentoPage() {
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30" />
         </div>
 
+        {/* Linha 5: REQUERIMENTO */}
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Requerimento <span className="text-red-500">*</span></label>
           <textarea required rows={5} value={form.texto} onChange={e => set('texto', e.target.value)}
