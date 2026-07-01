@@ -207,3 +207,46 @@ model Segov {
 
   vereador Vereador? @relation(fields: [vereadorId], references: [id])
 }
+
+model ConfigOpcao {
+  id        String   @id @default(cuid())
+  tipo      String   // 'origem' | 'categoria' | 'secretaria'
+  nome      String
+  ativo     Boolean  @default(true)
+  ordem     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([tipo, nome])
+}
+
+model Requerimento {
+  id            String    @id @default(cuid())
+  referencia    String    @unique
+  data          DateTime
+  texto         String
+  status        String    @default("Aguardando")
+  relevancia    String?
+  origem        String?
+  categoria     String?
+  secretaria    String?
+  dataConclusao DateTime?
+  documentos    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Tag {
+  id            String    @id @default(cuid())
+  referencia    String    @unique
+  data          DateTime
+  pedido        String
+  status        String    @default("Aguardando")
+  relevancia    String?
+  origem        String?
+  categoria     String?
+  secretaria    String?
+  dataConclusao DateTime?
+  documentos    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
