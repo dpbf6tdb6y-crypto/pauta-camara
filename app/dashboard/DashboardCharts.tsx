@@ -1,11 +1,17 @@
 'use client'
+import { useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, LabelList,
 } from 'recharts'
 
-export type VereadorData  = { nome: string; total: number }
-export type StatusData    = { status: string; total: number }
+export type VereadorData    = { nome: string; total: number }
+export type StatusData      = { status: string; total: number }
+export type ProposicaoResumo = {
+  id: string; tipo: string; numero: string; ano: number
+  ementa: string; status: string
+  autorNome: string | null; vereadorNome: string | null; isExec: boolean
+}
 
 const STATUS_COR: Record<string, string> = {
   'Aguardando':  '#eab308',
@@ -17,97 +23,219 @@ const STATUS_COR: Record<string, string> = {
   'Retirado':    '#f97316',
 }
 
+const STATUS_CHIP: Record<string, string> = {
+  'Aguardando':  'bg-yellow-50 text-yellow-700 border-yellow-200',
+  'Com Parecer': 'bg-purple-50 text-purple-700 border-purple-200',
+  'Em análise':  'bg-blue-50 text-blue-700 border-blue-200',
+  'Aprovado':    'bg-green-50 text-green-700 border-green-200',
+  'Rejeitado':   'bg-red-50 text-red-700 border-red-200',
+  'Arquivado':   'bg-gray-50 text-gray-600 border-gray-200',
+  'Retirado':    'bg-orange-50 text-orange-700 border-orange-200',
+}
+
+const TIPO_COR: Record<string, string> = {
+  PL: 'bg-blue-100 text-blue-800', PLC: 'bg-indigo-100 text-indigo-800',
+  PDL: 'bg-violet-100 text-violet-800', REQ: 'bg-amber-100 text-amber-800',
+  IND: 'bg-teal-100 text-teal-800', MOC: 'bg-pink-100 text-pink-800',
+}
+
 const VEREADOR_CORES = [
   '#8B0000','#c0392b','#7b2d8b','#1d4ed8','#0e7490',
   '#065f46','#92400e','#374151','#a21caf','#b45309',
   '#047857','#be185d','#1e40af','#6d28d9','#0f766e','#9f1239',
 ]
 
+type Filtro = { tipo: 'vereador' | 'executivo'; valor: string } | null
+
 interface Props {
   porVereador:        VereadorData[]
   porStatusExecutivo: StatusData[]
   totalExecutivo:     number
+  proposicoes:        ProposicaoResumo[]
 }
 
-export default function DashboardCharts({ porVereador, porStatusExecutivo, totalExecutivo }: Props) {
+export default function DashboardCharts({
+  porVereador, porStatusExecutivo, totalExecutivo, proposicoes,
+}: Props) {
+  const [filtro, setFiltro] = useState<Filtro>(null)
+
+  function toggle(tipo: 'vereador' | 'executivo', valor: string) {
+    setFiltro(prev => prev?.tipo === tipo && prev.valor === valor ? null : { tipo, valor })
+  }
+
+  const detalhes = filtro === null ? [] : filtro.tipo === 'vereador'
+    ? proposicoes.filter(p => {
+        if (p.isExec) return false
+        if (p.vereadorNome === filtro.valor) return true
+        const parsed = (p.autorNome || '').split(/\s+e\s+|,\s+/).map(n => n.trim())
+        return parsed.includes(filtro.valor)
+      })
+    : proposicoes.filter(p => p.isExec && p.status === filtro.valor)
+
+  const vChartH = Math.max(240, porVereador.length * 30 + 50)
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {/* ── Proposições por Vereador ── */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-          Proposições por Vereador
-        </p>
-        {porVereador.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-10">Nenhum dado disponível</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart
-              data={porVereador}
-              layout="vertical"
-              margin={{ left: 8, right: 40, top: 2, bottom: 2 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10 }} hide />
-              <YAxis
-                type="category" dataKey="nome" width={140}
-                tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
-              />
-              <Tooltip
-                formatter={(v: number) => [`${v} proposição(ões)`, 'Total']}
-                contentStyle={{ fontSize: 11, borderRadius: 8 }}
-              />
-              <Bar dataKey="total" radius={[0, 4, 4, 0]} maxBarSize={22}>
-                {porVereador.map((_, i) => (
-                  <Cell key={i} fill={VEREADOR_CORES[i % VEREADOR_CORES.length]} />
-                ))}
-                <LabelList
-                  dataKey="total"
-                  position="right"
-                  style={{ fontSize: 11, fontWeight: 700, fill: '#374151' }}
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3 items-start">
+
+        {/* ── Vereador ── */}
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+            Proposições por Vereador
+            <span className="ml-1 normal-case font-normal text-gray-300">— clique para detalhar</span>
+          </p>
+          {porVereador.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-10">Nenhum dado disponível</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={vChartH}>
+              <BarChart
+                data={porVereador}
+                layout="vertical"
+                margin={{ left: 8, right: 44, top: 2, bottom: 2 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                <XAxis type="number" allowDecimals={false} hide />
+                <YAxis
+                  type="category" dataKey="nome" width={148}
+                  tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
                 />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+                <Tooltip
+                  formatter={(v: number) => [`${v} proposição(ões)`, 'Total']}
+                  contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                />
+                <Bar
+                  dataKey="total"
+                  radius={[0, 4, 4, 0]}
+                  maxBarSize={22}
+                  cursor="pointer"
+                  onClick={(data) => toggle('vereador', data.nome)}
+                >
+                  {porVereador.map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill={VEREADOR_CORES[i % VEREADOR_CORES.length]}
+                      opacity={filtro?.tipo === 'vereador' && filtro.valor !== entry.nome ? 0.25 : 1}
+                    />
+                  ))}
+                  <LabelList
+                    dataKey="total"
+                    position="right"
+                    style={{ fontSize: 11, fontWeight: 700, fill: '#374151' }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* ── Executivo ── */}
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="flex items-baseline gap-2 mb-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              Proposições do Poder Executivo
+            </p>
+            <span className="text-lg font-bold text-purple-700">{totalExecutivo}</span>
+            <span className="ml-1 normal-case text-xs font-normal text-gray-300">— clique para detalhar</span>
+          </div>
+          {totalExecutivo === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-10">Nenhuma proposição do Executivo</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={porStatusExecutivo}
+                margin={{ left: 0, right: 16, top: 22, bottom: 2 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="status" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} hide />
+                <Tooltip
+                  formatter={(v: number) => [`${v} proposição(ões)`, 'Total']}
+                  contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                />
+                <Bar
+                  dataKey="total"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={52}
+                  cursor="pointer"
+                  onClick={(data) => toggle('executivo', data.status)}
+                >
+                  {porStatusExecutivo.map(entry => (
+                    <Cell
+                      key={entry.status}
+                      fill={STATUS_COR[entry.status] || '#6b7280'}
+                      opacity={filtro?.tipo === 'executivo' && filtro.valor !== entry.status ? 0.25 : 1}
+                    />
+                  ))}
+                  <LabelList
+                    dataKey="total"
+                    position="top"
+                    style={{ fontSize: 12, fontWeight: 700, fill: '#374151' }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
-      {/* ── Proposições do Executivo ── */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <div className="flex items-baseline gap-2 mb-2">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-            Proposições do Poder Executivo
-          </p>
-          <span className="text-lg font-bold text-purple-700">{totalExecutivo}</span>
-        </div>
-        {totalExecutivo === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-10">Nenhuma proposição do Executivo</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart
-              data={porStatusExecutivo}
-              margin={{ left: 0, right: 16, top: 22, bottom: 2 }}
+      {/* ── Painel de detalhe ── */}
+      {filtro && (
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-semibold text-gray-800 text-sm">
+              {filtro.tipo === 'vereador'
+                ? <><span className="text-gray-400 font-normal">Vereador: </span>{filtro.valor}</>
+                : <><span className="text-gray-400 font-normal">Executivo — Status: </span>{filtro.valor}</>}
+              <span className="ml-2 text-xs font-normal text-gray-400">
+                ({detalhes.length} proposição{detalhes.length !== 1 ? 'ões' : ''})
+              </span>
+            </p>
+            <button
+              onClick={() => setFiltro(null)}
+              className="text-gray-400 hover:text-gray-700 text-xs border border-gray-200 rounded px-2 py-0.5 transition"
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="status" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} hide />
-              <Tooltip
-                formatter={(v: number) => [`${v} proposição(ões)`, 'Total']}
-                contentStyle={{ fontSize: 11, borderRadius: 8 }}
-              />
-              <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={52}>
-                {porStatusExecutivo.map(entry => (
-                  <Cell key={entry.status} fill={STATUS_COR[entry.status] || '#6b7280'} />
+              Fechar ×
+            </button>
+          </div>
+
+          {detalhes.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-4">Nenhuma proposição encontrada</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400">
+                  <th className="text-left px-3 py-1.5 font-semibold">Tipo</th>
+                  <th className="text-left px-3 py-1.5 font-semibold">Número</th>
+                  <th className="text-left px-3 py-1.5 font-semibold">Ementa</th>
+                  <th className="text-left px-3 py-1.5 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {detalhes.map(p => (
+                  <tr key={p.id} className="hover:bg-gray-50 transition">
+                    <td className="px-3 py-1.5">
+                      <span className={`font-bold px-1.5 py-0.5 rounded ${TIPO_COR[p.tipo] || 'bg-gray-100 text-gray-700'}`}>
+                        {p.tipo}
+                      </span>
+                    </td>
+                    <td className="px-3 py-1.5 font-semibold text-gray-800 whitespace-nowrap">
+                      {p.numero}/{p.ano}
+                    </td>
+                    <td className="px-3 py-1.5 text-gray-600 max-w-lg">
+                      <span className="line-clamp-2">{p.ementa || <em className="text-gray-300">sem ementa</em>}</span>
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <span className={`border px-2 py-0.5 rounded font-medium ${STATUS_CHIP[p.status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                        {p.status}
+                      </span>
+                    </td>
+                  </tr>
                 ))}
-                <LabelList
-                  dataKey="total"
-                  position="top"
-                  style={{ fontSize: 12, fontWeight: 700, fill: '#374151' }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   )
 }

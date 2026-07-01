@@ -80,6 +80,18 @@ export default async function DashboardPage() {
     .map(([status, total]) => ({ status, total }))
     .sort((a, b) => b.total - a.total);
 
+  const proposicoes = itens.map(item => ({
+    id: item.id,
+    tipo: item.tipo,
+    numero: item.numero,
+    ano: item.ano,
+    ementa: item.ementa || '',
+    status: item.status,
+    autorNome: item.autorNome || null,
+    vereadorNome: item.vereador?.nome || null,
+    isExec: isExec(item),
+  }));
+
   return (
     <div className="p-3 space-y-3">
       {/* Header */}
@@ -153,6 +165,7 @@ export default async function DashboardPage() {
         porVereador={porVereador}
         porStatusExecutivo={porStatusExecutivo}
         totalExecutivo={totalExecutivo}
+        proposicoes={proposicoes}
       />
     </div>
   );
