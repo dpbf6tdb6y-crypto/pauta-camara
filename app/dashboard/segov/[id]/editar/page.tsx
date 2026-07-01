@@ -14,15 +14,16 @@ type StepData = {
   nome1?: string
   nome2?: string
   nome3?: string
+  data?: string
 }
 type StepState = { done: boolean; doneAt?: string; data?: StepData }
 type FluxoState = Record<string, StepState>
-type StepTipo = 'simples' | 'comissao' | 'comissao3nomes' | 'nome1'
+type StepTipo = 'simples' | 'comissao' | 'comissao3nomes' | 'nome1' | 'data'
 type StepDef = { key: string; label: string; labelCurto: string; tipo: StepTipo }
 
 const FLUXO_DEF: StepDef[] = [
   { key: 'protocolado',        label: 'Protocolado',                    labelCurto: 'Prot.',     tipo: 'simples' },
-  { key: 'pautado',            label: 'Pautado',                        labelCurto: 'Pautado',   tipo: 'simples' },
+  { key: 'pautado',            label: 'Pautado',                        labelCurto: 'Pautado',   tipo: 'data' },
   { key: 'comissao1',          label: 'Comissão 1',                     labelCurto: 'Com. 1',    tipo: 'comissao' },
   { key: 'comissao2',          label: 'Comissão 2',                     labelCurto: 'Com. 2',    tipo: 'comissao' },
   { key: 'comissao3',          label: 'Comissão 3',                     labelCurto: 'Com. 3',    tipo: 'comissao' },
@@ -145,24 +146,29 @@ export default function EditarSeggovPage() {
     const def = FLUXO_DEF.find(d => d.key === key)!
     const p = pending[key] || {}
     let data: StepData = {}
+    let doneAt = new Date().toISOString()
 
     if (def.tipo === 'comissao') {
-      if (!p.comissaoId) {
-        alert('Selecione uma comissão antes de marcar.')
-        return
-      }
+      if (!p.comissaoId) { alert('Selecione uma comissão antes de marcar.'); return }
       const com = comissoes.find((c: any) => c.id === p.comissaoId)
       data = { comissaoId: p.comissaoId, comissaoNome: com?.sigla || com?.nome }
     } else if (def.tipo === 'comissao3nomes') {
       data = { nome1: p.nome1 || '', nome2: p.nome2 || '', nome3: p.nome3 || '' }
     } else if (def.tipo === 'nome1') {
       data = { nome1: p.nome1 || '' }
+    } else if (def.tipo === 'data') {
+      if (!p.data) { alert('Selecione a data antes de marcar.'); return }
+      doneAt = p.data + 'T12:00:00.000Z'
     }
 
-    setFluxo(prev => ({
-      ...prev,
-      [key]: { done: true, doneAt: new Date().toISOString(), data },
-    }))
+    setFluxo(prev => {
+      const next = { ...prev, [key]: { done: true, doneAt, data } }
+      // Auto-marca Protocolado na mesma data quando Pautado é marcado
+      if (key === 'pautado' && !prev['protocolado']?.done) {
+        next['protocolado'] = { done: true, doneAt, data: {} }
+      }
+      return next
+    })
     setPendingState(prev => { const n = { ...prev }; delete n[key]; return n })
   }
 
@@ -176,6 +182,12 @@ export default function EditarSeggovPage() {
       .map(d => ({ ...d, ...(fluxo[d.key] || {}) })),
     [fluxo]
   )
+
+  const diasEmAberto = useMemo(() => {
+    const st = fluxo['pautado']
+    if (!st?.done || !st.doneAt) return null
+    return Math.floor((Date.now() - new Date(st.doneAt).getTime()) / 86400000)
+  }, [fluxo])
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
@@ -345,6 +357,25 @@ export default function EditarSeggovPage() {
             </div>
           )}
 
+          {/* Dias em aberto */}
+          {diasEmAberto !== null && (
+            <div className={`mb-5 inline-flex items-center gap-4 px-5 py-3 rounded-xl border ${
+              diasEmAberto <= 30 ? 'bg-green-50 border-green-200' :
+              diasEmAberto <= 60 ? 'bg-yellow-50 border-yellow-200' :
+              'bg-red-50 border-red-200'
+            }`}>
+              <span className={`text-4xl font-bold tabular-nums leading-none ${
+                diasEmAberto <= 30 ? 'text-green-600' :
+                diasEmAberto <= 60 ? 'text-yellow-500' :
+                'text-red-600'
+              }`}>{diasEmAberto}</span>
+              <div>
+                <p className="text-sm font-semibold text-gray-700">dias em aberto</p>
+                <p className="text-xs text-gray-400 mt-0.5">pautado em {fmtData(fluxo['pautado']?.doneAt)}</p>
+              </div>
+            </div>
+          )}
+
           {/* ── Checklist de etapas ── */}
           <div className="grid grid-cols-3 gap-3 items-start">
             {FLUXO_DEF.map((def, idx) => {
@@ -438,6 +469,12 @@ export default function EditarSeggovPage() {
                       {!done && def.tipo === 'nome1' && (
                         <input placeholder="Nome do solicitante" value={p.nome1 || ''}
                           onChange={e => setPendingData(def.key, 'nome1', e.target.value)}
+                          className={`mt-2 ${inpSm}`} />
+                      )}
+
+                      {!done && def.tipo === 'data' && (
+                        <input type="date" value={p.data || ''}
+                          onChange={e => setPendingData(def.key, 'data', e.target.value)}
                           className={`mt-2 ${inpSm}`} />
                       )}
                     </div>
