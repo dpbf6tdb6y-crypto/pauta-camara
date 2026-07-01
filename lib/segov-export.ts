@@ -91,7 +91,7 @@ export function exportarSegovExcel(
   const ws = XLSX.utils.json_to_sheet(linhas);
   ws["!cols"] = headers.map(h => ({ wch: Math.min(60, Math.max(12, h.length + 4)) }));
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "SEGOV");
+  XLSX.utils.book_append_sheet(wb, ws, "Proposições");
   XLSX.writeFile(wb, nomeArquivo);
 }
 
@@ -137,7 +137,7 @@ export function exportarSegovPDF(
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
-    doc.text("SEGOV — Secretaria de Governo  |  Câmara Municipal de Nova Lima", margin, 16);
+    doc.text("Proposições  |  Câmara Municipal de Nova Lima", margin, 16);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.text(

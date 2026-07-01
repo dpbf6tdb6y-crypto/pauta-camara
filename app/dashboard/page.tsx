@@ -95,7 +95,7 @@ export default async function DashboardPage() {
     <div className="p-6 space-y-6 pb-10">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-500 text-sm">Visão geral do sistema legislativo — SEGOV</p>
+        <p className="text-gray-500 text-sm">Visão geral do sistema legislativo</p>
       </div>
 
       {/* ── Resumo (4 cards) ── */}

@@ -116,7 +116,7 @@ export default function ImportarSeggovPage() {
           </svg>
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Importar Pauta para o SEGOV</h1>
+          <h1 className="text-xl font-bold text-gray-800">Importar Pauta</h1>
           <p className="text-sm text-gray-500">Extrai proposições e pareceres da pauta automaticamente</p>
         </div>
       </div>
@@ -233,7 +233,7 @@ export default function ImportarSeggovPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                   </svg>Importando...</>
-                ) : 'Importar para o SEGOV'}
+                ) : 'Importar Proposições'}
               </button>
             </div>
           </div>
@@ -309,7 +309,7 @@ export default function ImportarSeggovPage() {
                     <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Proposição</th>
                     <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Comissão que emitiu</th>
                     <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Próxima comissão</th>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">No SEGOV</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-500 text-xs">Cadastrada</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -382,7 +382,7 @@ export default function ImportarSeggovPage() {
             <Link href="/dashboard/segov"
               className="px-8 py-2.5 rounded-lg text-sm font-semibold text-white transition"
               style={{ background: '#8B0000' }}>
-              Ver no SEGOV
+              Ver Proposições
             </Link>
           </div>
         </div>

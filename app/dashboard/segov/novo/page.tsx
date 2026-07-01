@@ -44,8 +44,8 @@ export default function NovoSeggovPage() {
           </svg>
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Nova SEGOV</h1>
-          <p className="text-sm text-gray-500">Cadastrar nova proposição SEGOV</p>
+          <h1 className="text-xl font-bold text-gray-800">Nova Proposição</h1>
+          <p className="text-sm text-gray-500">Cadastrar nova proposição</p>
         </div>
       </div>
 
