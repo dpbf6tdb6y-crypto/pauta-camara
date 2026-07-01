@@ -367,7 +367,7 @@ export default function EditarSeggovPage() {
           )}
 
           {/* ── Checklist de etapas ── */}
-          <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-3 items-start">
             {FLUXO_DEF.map((def, idx) => {
               const state = fluxo[def.key]
               const done = !!state?.done
