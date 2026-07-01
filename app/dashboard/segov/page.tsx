@@ -91,14 +91,14 @@ export default function SeggovPage() {
         return next
       })
     } else {
-      setSelecionados(prev => new Set([...prev, ...itensExibidos.map(i => i.id)]))
+      setSelecionados(prev => new Set([...Array.from(prev), ...itensExibidos.map(i => i.id)]))
     }
   }
 
   async function excluirSelecionados() {
     if (!confirm(`Excluir ${selecionados.size} item(s) selecionado(s)?`)) return
     setExcluindo(true)
-    await Promise.all([...selecionados].map(id => fetch(`/api/segov/${id}`, { method: 'DELETE' })))
+    await Promise.all(Array.from(selecionados).map(id => fetch(`/api/segov/${id}`, { method: 'DELETE' })))
     setExcluindo(false)
     carregar()
   }
@@ -303,16 +303,24 @@ export default function SeggovPage() {
                     {/* Ementa */}
                     <p className="text-sm text-gray-600 mt-1.5 leading-snug">{item.ementa}</p>
                     {/* Autores */}
-                    {(item.vereador?.nome || item.autorNome) && (
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {item.vereador?.nome
-                          ? <span className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{item.vereador.nome}</span>
-                          : item.autorNome.split(/\s+e\s+|,\s+/).map((nome: string, i: number) => (
-                              <span key={i} className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{nome.trim()}</span>
-                            ))
-                        }
-                      </div>
-                    )}
+                    {(() => {
+                      const nomes: string[] = []
+                      if (item.vereador?.nome) nomes.push(item.vereador.nome)
+                      if (item.autorNome) {
+                        ;(item.autorNome as string).split(/\s+e\s+|,\s+/).forEach((n: string) => {
+                          const t = n.trim()
+                          if (t && !nomes.includes(t)) nomes.push(t)
+                        })
+                      }
+                      if (!nomes.length) return null
+                      return (
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {nomes.map((nome, i) => (
+                            <span key={i} className="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{nome}</span>
+                          ))}
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
 
