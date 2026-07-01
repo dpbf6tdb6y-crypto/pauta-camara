@@ -234,9 +234,9 @@ export default function EditarSeggovPage() {
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
 
-        {/* Linha 1: Número | Ano | Tipo | Status | Data Envio */}
-        <div className="grid grid-cols-6 gap-3">
-          <div className="col-span-2">
+        {/* Linha 1: Número | Ano | Tipo | Autor | Status | Dias em Aberto */}
+        <div className="grid grid-cols-6 gap-3 items-start">
+          <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Número</label>
             <input required value={formatNumero(form.numero)}
               onChange={e => set('numero', e.target.value.replace(/\./g, ''))}
@@ -252,15 +252,64 @@ export default function EditarSeggovPage() {
               {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
+
+          {/* Autor (dropdown + badges empilhados) */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor</label>
+            <select onChange={e => { adicionarAutor(e.target.value); e.target.value = '' }} className={inp}>
+              <option value="">— Selecionar —</option>
+              <option value="executivo">⚡ Executivo</option>
+              <optgroup label="Vereadores">
+                {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
+              </optgroup>
+            </select>
+            {autores.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                {autores.map((a, i) => (
+                  <span key={i} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium ${
+                    a.isPE ? 'bg-orange-100 text-orange-800 border border-orange-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  }`}>
+                    {a.isPE && <span>⚡</span>}
+                    <span className="flex-1 truncate">{a.nome}</span>
+                    <button type="button" onClick={() => removerAutor(i)} className="text-gray-400 hover:text-red-500 transition flex-shrink-0">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</label>
             <select value={form.status} onChange={e => set('status', e.target.value)} className={inp}>
               {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+
+          {/* Dias em Aberto */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data Envio</label>
-            <input type="date" value={form.dataEnvio} onChange={e => set('dataEnvio', e.target.value)} className={inp} />
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Dias em Aberto</label>
+            {diasEmAberto !== null ? (
+              <div className={`rounded-lg border px-3 py-2 ${
+                diasEmAberto <= 30 ? 'bg-green-50 border-green-200' :
+                diasEmAberto <= 60 ? 'bg-yellow-50 border-yellow-200' :
+                'bg-red-50 border-red-200'
+              }`}>
+                <p className={`text-2xl font-bold tabular-nums leading-none ${
+                  diasEmAberto <= 30 ? 'text-green-600' :
+                  diasEmAberto <= 60 ? 'text-yellow-500' :
+                  'text-red-600'
+                }`}>{diasEmAberto} <span className="text-sm font-normal">dias</span></p>
+                <p className="text-xs text-gray-400 mt-1">desde {fmtData(fluxo['pautado']?.doneAt)}</p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400">
+                Pautado não marcado
+              </div>
+            )}
           </div>
         </div>
 
@@ -276,35 +325,6 @@ export default function EditarSeggovPage() {
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ementa</label>
           <textarea required rows={6} value={form.ementa} onChange={e => set('ementa', e.target.value)}
             className={`${inp} resize-none`} />
-        </div>
-
-        {/* Autor */}
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Autor</label>
-          <select onChange={e => { adicionarAutor(e.target.value); e.target.value = '' }} className={inp}>
-            <option value="">— Selecionar autor —</option>
-            <option value="executivo">⚡ Poder Executivo</option>
-            <optgroup label="Vereadores">
-              {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
-            </optgroup>
-          </select>
-          {autores.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              {autores.map((a, i) => (
-                <span key={i} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                  a.isPE ? 'bg-orange-100 text-orange-800 border border-orange-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                }`}>
-                  {a.isPE && <span>⚡</span>}
-                  <span className="flex-1 truncate">{a.nome}</span>
-                  <button type="button" onClick={() => removerAutor(i)} className="text-gray-400 hover:text-red-500 transition flex-shrink-0">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* ─── FLUXO DE TRAMITAÇÃO ─── */}
@@ -354,25 +374,6 @@ export default function EditarSeggovPage() {
           {marcados.length === 0 && (
             <div className="mb-5 text-xs text-gray-400 italic bg-gray-50 rounded-lg border border-dashed border-gray-200 p-3 text-center">
               Nenhuma etapa marcada ainda. Marque as etapas abaixo para construir o fluxo.
-            </div>
-          )}
-
-          {/* Dias em aberto */}
-          {diasEmAberto !== null && (
-            <div className={`mb-5 inline-flex items-center gap-4 px-5 py-3 rounded-xl border ${
-              diasEmAberto <= 30 ? 'bg-green-50 border-green-200' :
-              diasEmAberto <= 60 ? 'bg-yellow-50 border-yellow-200' :
-              'bg-red-50 border-red-200'
-            }`}>
-              <span className={`text-4xl font-bold tabular-nums leading-none ${
-                diasEmAberto <= 30 ? 'text-green-600' :
-                diasEmAberto <= 60 ? 'text-yellow-500' :
-                'text-red-600'
-              }`}>{diasEmAberto}</span>
-              <div>
-                <p className="text-sm font-semibold text-gray-700">dias em aberto</p>
-                <p className="text-xs text-gray-400 mt-0.5">pautado em {fmtData(fluxo['pautado']?.doneAt)}</p>
-              </div>
             </div>
           )}
 
