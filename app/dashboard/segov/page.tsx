@@ -296,7 +296,7 @@ export default function SeggovPage() {
                       )}
                       {diasAberto !== null && (
                         <span className={`text-xs font-bold ${diasAberto > 30 ? 'text-red-600' : diasAberto > 15 ? 'text-yellow-600' : 'text-green-600'}`}>
-                          {diasAberto}d em aberto
+                          {diasAberto} dias em aberto
                         </span>
                       )}
                     </div>
