@@ -266,54 +266,33 @@ export default function EditarSeggovPage() {
             className={`${inp} resize-none`} />
         </div>
 
-        {/* Autor + Movimentação */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Autor</label>
-            <select onChange={e => { adicionarAutor(e.target.value); e.target.value = '' }} className={inp}>
-              <option value="">— Selecionar autor —</option>
-              <option value="executivo">⚡ Poder Executivo</option>
-              <optgroup label="Vereadores">
-                {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
-              </optgroup>
-            </select>
-            {autores.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {autores.map((a, i) => (
-                  <span key={i} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-                    a.isPE ? 'bg-orange-100 text-orange-800 border border-orange-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                  }`}>
-                    {a.isPE && <span>⚡</span>}
-                    {a.nome}
-                    <button type="button" onClick={() => removerAutor(i)} className="text-gray-400 hover:text-red-500 transition">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Movimentação</label>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Encaminhado à comissão</label>
-              <input value={form.observacao} onChange={e => set('observacao', e.target.value)}
-                placeholder="ex: Comissão de Legislação e Justiça" className={inp} />
+        {/* Autor */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Autor</label>
+          <select onChange={e => { adicionarAutor(e.target.value); e.target.value = '' }} className={inp}>
+            <option value="">— Selecionar autor —</option>
+            <option value="executivo">⚡ Poder Executivo</option>
+            <optgroup label="Vereadores">
+              {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
+            </optgroup>
+          </select>
+          {autores.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              {autores.map((a, i) => (
+                <span key={i} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                  a.isPE ? 'bg-orange-100 text-orange-800 border border-orange-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                }`}>
+                  {a.isPE && <span>⚡</span>}
+                  <span className="flex-1 truncate">{a.nome}</span>
+                  <button type="button" onClick={() => removerAutor(i)} className="text-gray-400 hover:text-red-500 transition flex-shrink-0">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              ))}
             </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Parecer emitido por</label>
-              <input value={form.parecerComissao} onChange={e => set('parecerComissao', e.target.value)}
-                placeholder="ex: Comissão de Legislação e Justiça" className={inp} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Encaminhado para votação / próxima comissão</label>
-              <input value={form.proxComissao} onChange={e => set('proxComissao', e.target.value)}
-                placeholder="ex: Comissão de Orçamento ou Plenário" className={inp} />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* ─── FLUXO DE TRAMITAÇÃO ─── */}
@@ -405,11 +384,11 @@ export default function EditarSeggovPage() {
                           )}
                           {done
                             ? <button type="button" onClick={() => desmarcar(def.key)}
-                                className="text-xs text-red-400 hover:text-red-600 transition px-2 py-0.5 rounded border border-red-200 hover:border-red-300 hover:bg-red-50">
-                                Desmarcar
+                                className="text-xs text-red-400 hover:text-red-600 transition px-1.5 py-0.5 rounded border border-red-200 hover:border-red-300 hover:bg-red-50">
+                                ✕
                               </button>
                             : <button type="button" onClick={() => marcar(def.key)}
-                                className="text-xs px-3 py-1 rounded-md bg-green-500 text-white hover:bg-green-600 transition font-medium shadow-sm">
+                                className="text-xs px-2.5 py-1 rounded-md bg-green-500 text-white hover:bg-green-600 transition font-medium shadow-sm whitespace-nowrap">
                                 Marcar
                               </button>
                           }
@@ -443,7 +422,7 @@ export default function EditarSeggovPage() {
                       )}
 
                       {!done && def.tipo === 'comissao3nomes' && (
-                        <div className="mt-2 grid grid-cols-3 gap-2">
+                        <div className="mt-2 space-y-1.5">
                           <input placeholder="Membro 1" value={p.nome1 || ''}
                             onChange={e => setPendingData(def.key, 'nome1', e.target.value)}
                             className={inpSm} />
