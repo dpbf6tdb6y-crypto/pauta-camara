@@ -12,7 +12,6 @@ export default function EditarTagPage() {
   const [carregando, setCarregando] = useState(true)
   const [salvando, setSalvando] = useState(false)
   const [referencia, setReferencia] = useState('')
-  const [dataCadastro, setDataCadastro] = useState('')
   const [vereadores, setVereadores] = useState<Opcao[]>([])
   const [origens, setOrigens] = useState<Opcao[]>([])
   const [categorias, setCategorias] = useState<Opcao[]>([])
@@ -31,7 +30,6 @@ export default function EditarTagPage() {
       fetch('/api/config-opcoes?tipo=secretaria').then(r => r.json()),
     ]).then(([item, vers, ors, cats, secs]) => {
       setReferencia(item.referencia)
-      setDataCadastro(new Date(item.createdAt).toLocaleDateString('pt-BR'))
       setForm({
         data: item.data ? item.data.split('T')[0] : '',
         pedido: item.pedido || '',
@@ -79,18 +77,21 @@ export default function EditarTagPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-gray-800">Editar TAG</h1>
-          <p className="text-sm text-gray-500">{referencia}</p>
+          <p className="text-sm text-gray-500 font-mono">{referencia}</p>
         </div>
       </div>
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
 
-        {/* Linha 1: REF | STATUS | RELEVÂNCIA */}
+        {/* Linha 1: AUTOR | STATUS | RELEVÂNCIA */}
         <div className="grid grid-cols-3 gap-5">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ref. TAG</label>
-            <input disabled value={referencia}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 bg-gray-50 cursor-not-allowed font-semibold" />
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor (Vereador) <span className="text-red-500">*</span></label>
+            <select required value={form.vereadorId} onChange={e => set('vereadorId', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+              <option value="">Selecione...</option>
+              {vereadores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status <span className="text-red-500">*</span></label>
@@ -114,16 +115,8 @@ export default function EditarTagPage() {
           </div>
         </div>
 
-        {/* Linha 2: AUTOR | ORIGEM | CATEGORIA | SECRETARIA */}
-        <div className="grid grid-cols-4 gap-5">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor (Vereador)</label>
-            <select value={form.vereadorId} onChange={e => set('vereadorId', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
-              <option value="">Selecione...</option>
-              {vereadores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
-            </select>
-          </div>
+        {/* Linha 2: ORIGEM | CATEGORIA | SECRETARIA */}
+        <div className="grid grid-cols-3 gap-5">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Origem</label>
             <select value={form.origem} onChange={e => set('origem', e.target.value)}
@@ -150,13 +143,8 @@ export default function EditarTagPage() {
           </div>
         </div>
 
-        {/* Linha 3: DATA CADASTRO | DATA | DATA CONCLUSÃO */}
-        <div className="grid grid-cols-3 gap-5">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data de Cadastro</label>
-            <input disabled value={dataCadastro}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50 cursor-not-allowed" />
-          </div>
+        {/* Linha 3: DATA | DATA CONCLUSÃO */}
+        <div className="grid grid-cols-2 gap-5">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data <span className="text-red-500">*</span></label>
             <input required type="date" value={form.data} onChange={e => set('data', e.target.value)}

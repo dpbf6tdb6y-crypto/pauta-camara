@@ -58,12 +58,15 @@ export default function NovoRequerimentoPage() {
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
 
-        {/* Linha 1: REF | STATUS | RELEVÂNCIA */}
+        {/* Linha 1: AUTOR | STATUS | RELEVÂNCIA */}
         <div className="grid grid-cols-3 gap-5">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ref. Requerimento</label>
-            <input disabled value="(gerado automaticamente)"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50 cursor-not-allowed" />
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor (Vereador) <span className="text-red-500">*</span></label>
+            <select required value={form.vereadorId} onChange={e => set('vereadorId', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
+              <option value="">Selecione...</option>
+              {vereadores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status <span className="text-red-500">*</span></label>
@@ -87,16 +90,8 @@ export default function NovoRequerimentoPage() {
           </div>
         </div>
 
-        {/* Linha 2: AUTOR | ORIGEM | CATEGORIA | SECRETARIA */}
-        <div className="grid grid-cols-4 gap-5">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor (Vereador)</label>
-            <select value={form.vereadorId} onChange={e => set('vereadorId', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30">
-              <option value="">Selecione...</option>
-              {vereadores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
-            </select>
-          </div>
+        {/* Linha 2: ORIGEM | CATEGORIA | SECRETARIA */}
+        <div className="grid grid-cols-3 gap-5">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Origem</label>
             <select value={form.origem} onChange={e => set('origem', e.target.value)}
@@ -123,13 +118,8 @@ export default function NovoRequerimentoPage() {
           </div>
         </div>
 
-        {/* Linha 3: DATA CADASTRO | DATA | DATA CONCLUSÃO */}
-        <div className="grid grid-cols-3 gap-5">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data de Cadastro</label>
-            <input disabled value={new Date().toLocaleDateString('pt-BR')}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400 bg-gray-50 cursor-not-allowed" />
-          </div>
+        {/* Linha 3: DATA | DATA CONCLUSÃO */}
+        <div className="grid grid-cols-2 gap-5">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Data <span className="text-red-500">*</span></label>
             <input required type="date" value={form.data} onChange={e => set('data', e.target.value)}
