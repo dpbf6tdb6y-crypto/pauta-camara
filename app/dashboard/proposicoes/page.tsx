@@ -17,11 +17,6 @@ type Proposicao = {
 const tipoLabel: Record<string, string> = {
   pl: "PL", resolucao: "Resolução", requerimento: "Requerimento", mocao: "Moção",
 };
-const tipoParaSegov: Record<string, string> = {
-  pl: "PL", resolucao: "PLC", requerimento: "REQ", mocao: "MOC",
-};
-const SEGOV_TIPOS = ["PL", "PLC", "PDL", "REQ", "IND", "MOC"];
-const SEGOV_STATUS = ["Aguardando", "Em análise", "Aprovado", "Rejeitado", "Arquivado", "Retirado"];
 const statusLabel: Record<string, string> = {
   em_tramitacao: "Em tramitação", aprovada: "Aprovada", rejeitada: "Rejeitada",
   arquivada: "Arquivada", aguardando_sancao: "Ag. Sanção",
@@ -56,122 +51,11 @@ const emptyForm = {
   comissoes: [] as { comissaoId: string; ordem: number; parecerConjunto: boolean }[],
 };
 
-const STEP_W = 56;
-const CONN_W = 8;
-
-function isComissaoCRF(c: ComissaoItem) {
-  return c.comissao.sigla === "CRF" || c.comissao.nome.toLowerCase().includes("redação final") || c.comissao.nome.toLowerCase().includes("redacao final");
-}
-
-type Etapa = { key: string; label: string; parecerConjunto?: boolean; isCRF?: boolean };
-
-function buildEtapas(p: Proposicao): Etapa[] {
-  const etapas: Etapa[] = [
-    { key: "protocolado", label: "Protocolado" },
-    { key: "pautado", label: "Pautado" },
-  ];
-
-  const regulares = p.comissoes.filter(c => !isComissaoCRF(c));
-  const crf = p.comissoes.find(c => isComissaoCRF(c));
-
-  regulares.forEach((c, i) => {
-    etapas.push({ key: `comissao${c.ordem}`, label: c.comissao?.sigla || `Com. ${i + 1}`, parecerConjunto: c.parecerConjunto });
-  });
-
-  etapas.push({ key: "primeira_votacao", label: "1ª Votação" });
-  if (p.numVotacoes >= 2) etapas.push({ key: "segunda_votacao", label: "2ª Votação" });
-
-  // CRF vem após as votações
-  if (crf) {
-    etapas.push({ key: `comissao${crf.ordem}`, label: crf.comissao?.sigla || "CRF", isCRF: true });
-  }
-
-  etapas.push({
-    key: p.destinoFinal === "promulgacao" ? "promulgada" : "aguardando_sancao",
-    label: p.destinoFinal === "promulgacao" ? "Promulgar" : "Ag. Sanção",
-  });
-  return etapas;
-}
-
 function autoSecao(p: Proposicao): string {
   if (p.tipo === "requerimento" || p.tipo === "mocao") return "requerimento";
   if (p.etapaAtual === "protocolado") return "apresentacao";
   if (p.etapaAtual.startsWith("comissao") || p.etapaAtual === "parecer_conjunto") return "parecer";
   return "votacao";
-}
-
-function gruposConjuntoEtapas(etapas: Etapa[]): { start: number; end: number }[] {
-  const groups: { start: number; end: number }[] = [];
-  let start = -1;
-  etapas.forEach((e, i) => {
-    if (e.parecerConjunto) {
-      if (start === -1) start = i;
-    } else {
-      if (start !== -1) { groups.push({ start, end: i - 1 }); start = -1; }
-    }
-  });
-  if (start !== -1) groups.push({ start, end: etapas.length - 1 });
-  return groups;
-}
-
-function Stepper({ p }: { p: Proposicao }) {
-  const etapas = buildEtapas(p);
-  const etapaResolvida = p.etapaAtual === "pronto_votar" ? "primeira_votacao" : p.etapaAtual;
-  const idx = etapas.findIndex(e => e.key === etapaResolvida);
-  const grupos = gruposConjuntoEtapas(etapas);
-  const temConjunto = grupos.length > 0;
-
-  return (
-    <div className="mt-4 pt-4 border-t border-gray-100 overflow-x-auto">
-      <div className="relative inline-flex flex-col" style={{ paddingTop: temConjunto ? 26 : 0 }}>
-
-        {/* Brackets de parecer conjunto */}
-        {grupos.map((g, gi) => {
-          const left = g.start * (STEP_W + CONN_W);
-          const width = (g.end - g.start) * (STEP_W + CONN_W) + STEP_W;
-          return (
-            <div key={gi} style={{ position: "absolute", top: 0, left, width, height: 24 }}>
-              <span style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", fontSize: 8, fontWeight: 700, color: "#4338ca", whiteSpace: "nowrap" }}>
-                Parecer Conjunto
-              </span>
-              <div style={{ position: "absolute", bottom: 4, left: 4, right: 4, height: 2, background: "#4338ca", borderRadius: 1 }} />
-              <div style={{ position: "absolute", bottom: 4, left: 4, width: 2, height: 7, background: "#4338ca", borderRadius: 1 }} />
-              <div style={{ position: "absolute", bottom: 4, right: 4, width: 2, height: 7, background: "#4338ca", borderRadius: 1 }} />
-            </div>
-          );
-        })}
-
-        <div className="flex items-end">
-          {etapas.map((e, i) => {
-            const concluida = i < idx;
-            const atual = i === idx;
-            return (
-              <div key={e.key} className="flex items-end">
-                <div className="flex flex-col items-center gap-1" style={{ minWidth: STEP_W }}>
-                  <div className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold"
-                    style={{
-                      background: concluida ? "#16a34a" : atual ? "#d4a017" : "#e5e7eb",
-                      color: concluida || atual ? "#fff" : e.parecerConjunto ? "#4338ca" : "#9ca3af",
-                      boxShadow: atual ? "0 0 0 3px #d4a01740" : "none",
-                      outline: e.isCRF ? "2px solid #15803d" : "none",
-                    }}>
-                    {concluida ? "✓" : i + 1}
-                  </div>
-                  <span className="text-center leading-tight"
-                    style={{ fontSize: 9, color: concluida ? "#16a34a" : atual ? "#92400e" : e.parecerConjunto ? "#4338ca" : e.isCRF ? "#15803d" : "#9ca3af", fontWeight: atual ? 600 : 400, maxWidth: STEP_W }}>
-                    {e.label}
-                  </span>
-                </div>
-                {i < etapas.length - 1 && (
-                  <div style={{ width: CONN_W, height: 2, background: i < idx ? "#16a34a" : "#e5e7eb", marginBottom: 18, flexShrink: 0 }} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 type Sessao = { id: string; data: string; tipo: string; numero?: number; status: string };
@@ -198,12 +82,6 @@ export default function ProposicoesPage() {
   const [filtroPauta, setFiltroPauta] = useState<"" | "a_pautar" | "pautadas" | "votadas">("");
   const [idsNaPauta, setIdsNaPauta] = useState<Set<string>>(new Set());
 
-  const [modalSegov, setModalSegov] = useState(false);
-  const [propParaSegov, setPropParaSegov] = useState<Proposicao | null>(null);
-  const [segForm, setSegForm] = useState({ tipo: "PL", vereadorId: "", status: "Aguardando", observacao: "" });
-  const [enviandoSegov, setEnviandoSegov] = useState(false);
-  const [segSucesso, setSegSucesso] = useState("");
-
   async function carregar() {
     const params = new URLSearchParams();
     if (filtroTipo) params.set("tipo", filtroTipo);
@@ -220,7 +98,6 @@ export default function ProposicoesPage() {
     const sessaosAberta = s.filter((ss: any) => ss.status === "agendada");
     setSessoes(sessaosAberta);
 
-    // Carrega IDs das proposições já na próxima sessão
     const proxima = sessaosAberta.sort((a: any, b: any) => new Date(a.data).getTime() - new Date(b.data).getTime())[0];
     if (proxima) {
       const sessaoDetalhe = await fetch(`/api/sessoes/${proxima.id}`).then(r => r.json());
@@ -334,7 +211,6 @@ export default function ProposicoesPage() {
 
   function abrirModalSecao() {
     if (!proximaSessao) return;
-    // Auto-detect secao from first selected proposition
     const primeiraId = Array.from(selecionadas)[0];
     const primeira = lista.find(p => p.id === primeiraId);
     if (primeira) setSecaoSelecionada(autoSecao(primeira));
@@ -378,53 +254,6 @@ export default function ProposicoesPage() {
     carregar();
   }
 
-  function abrirModalSegov(p: Proposicao) {
-    setPropParaSegov(p);
-    setSegForm({
-      tipo: tipoParaSegov[p.tipo] || "PL",
-      vereadorId: p.autores?.[0]?.vereador?.id || "",
-      status: "Aguardando",
-      observacao: "",
-    });
-    setSegSucesso("");
-    setModalSegov(true);
-  }
-
-  async function confirmarEnvioSegov() {
-    if (!propParaSegov) return;
-    setEnviandoSegov(true);
-    const res = await fetch("/api/segov", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tipo: segForm.tipo,
-        numero: propParaSegov.numero,
-        ano: String(propParaSegov.ano),
-        ementa: propParaSegov.ementa,
-        vereadorId: segForm.vereadorId || null,
-        status: segForm.status,
-        observacao: segForm.observacao,
-      }),
-    });
-    setEnviandoSegov(false);
-    if (res.ok) {
-      setSegSucesso(`${segForm.tipo} ${propParaSegov.numero}/${propParaSegov.ano} registrado no SEGOV!`);
-    } else {
-      setSegSucesso("Erro ao enviar para o SEGOV. Verifique se já não está cadastrado.");
-    }
-  }
-
-  async function avancarEtapa(id: string, etapaAtual: string) {
-    const statusAtualizado =
-      etapaAtual === "aguardando_sancao" ? "aguardando_sancao" : undefined;
-    await fetch(`/api/proposicoes/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ etapaAtual, ...(statusAtualizado ? { status: statusAtualizado } : {}) }),
-    });
-    carregar();
-  }
-
   async function sancionar(id: string, vetado: boolean) {
     await fetch(`/api/proposicoes/${id}`, {
       method: "PUT",
@@ -450,7 +279,6 @@ export default function ProposicoesPage() {
           <p className="text-gray-500 text-sm">{lista.length} registros</p>
         </div>
 
-        {/* Botão central Enviar para Pauta */}
         <div className="flex-1 flex justify-center">
           {selecionadas.size > 0 && (
             proximaSessao ? (
@@ -597,12 +425,6 @@ export default function ProposicoesPage() {
                   className="px-3 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition">
                   Editar
                 </button>
-                <button onClick={() => abrirModalSegov(p)}
-                  className="px-3 py-1 rounded-lg text-xs font-semibold text-white hover:opacity-90 transition"
-                  style={{ background: "#6B21A8" }}
-                  title="Registrar no SEGOV">
-                  → SEGOV
-                </button>
                 {p.etapaAtual !== "protocolado" && p.status === "em_tramitacao" && (
                   <button onClick={() => retirarDePauta(p.id)}
                     className="px-3 py-1 rounded-lg text-xs font-medium bg-orange-50 text-orange-700 hover:bg-orange-100 transition">
@@ -615,8 +437,6 @@ export default function ProposicoesPage() {
                 </button>
               </div>
             </div>
-
-            <Stepper p={p} />
           </div>
         )})}
       </div>
@@ -732,94 +552,10 @@ export default function ProposicoesPage() {
                 {verProp.dispensaParecer && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Dispensa de Parecer</span>}
                 {verProp.dispensaIntersticio && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Dispensa de Interstício</span>}
               </div>
-              <div>
-                <p className="text-xs text-gray-500 font-medium mb-2">Fluxo</p>
-                <Stepper p={verProp} />
-              </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setVerProp(null)} className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50">Fechar</button>
               <button onClick={() => { setVerProp(null); abrirEditar(verProp); }} className="flex-1 bg-amber-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-amber-600">Editar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal enviar para SEGOV */}
-      {modalSegov && propParaSegov && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h2 className="font-bold text-lg text-gray-800">Registrar no SEGOV</h2>
-                <p className="text-sm text-gray-500">
-                  {tipoLabel[propParaSegov.tipo]} {propParaSegov.numero}/{propParaSegov.ano}
-                </p>
-              </div>
-              <button onClick={() => setModalSegov(false)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-600 italic">
-              {propParaSegov.ementa}
-            </div>
-
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tipo SEGOV</label>
-                  <select value={segForm.tipo} onChange={e => setSegForm({ ...segForm, tipo: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30">
-                    {SEGOV_TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</label>
-                  <select value={segForm.status} onChange={e => setSegForm({ ...segForm, status: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30">
-                    {SEGOV_STATUS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vereador responsável</label>
-                <select value={segForm.vereadorId} onChange={e => setSegForm({ ...segForm, vereadorId: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30">
-                  <option value="">— Selecione —</option>
-                  {vereadores.map((v: Vereador) => <option key={v.id} value={v.id}>{v.nome}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Observação</label>
-                <textarea rows={2} value={segForm.observacao} onChange={e => setSegForm({ ...segForm, observacao: e.target.value })}
-                  placeholder="Opcional..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 resize-none" />
-              </div>
-            </div>
-
-            {segSucesso && (
-              <div className={`mt-3 rounded-lg p-3 text-sm font-medium ${segSucesso.startsWith("Erro") ? "bg-red-50 text-red-700 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
-                {segSucesso.startsWith("Erro") ? "✗" : "✓"} {segSucesso}
-              </div>
-            )}
-
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setModalSegov(false)}
-                className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50">
-                {segSucesso && !segSucesso.startsWith("Erro") ? "Fechar" : "Cancelar"}
-              </button>
-              {(!segSucesso || segSucesso.startsWith("Erro")) && (
-                <button onClick={confirmarEnvioSegov} disabled={enviandoSegov}
-                  className="flex-1 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-60 transition"
-                  style={{ background: "#6B21A8" }}>
-                  {enviandoSegov ? "Enviando..." : "Registrar no SEGOV"}
-                </button>
-              )}
             </div>
           </div>
         </div>
