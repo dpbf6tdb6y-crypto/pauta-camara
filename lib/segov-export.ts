@@ -109,7 +109,9 @@ export function exportarSegovPDF(
   const H = 595.28;
   const margin = 36;
   const cw = W - 2 * margin;
-  const pad = 10; // inner padding inside card
+  const pad = 12;
+  const ementaFontSize = 12;
+  const ementaLineH = 17; // line height for 12pt font with comfortable spacing
 
   let pageNum = 1;
 
@@ -143,20 +145,23 @@ export function exportarSegovPDF(
     const hasFluxo = marcados.length > 0;
     const titulo = `${item.tipo} ${fmtNumero(item.numero)}/${item.ano}  —  ${autor}`;
 
-    const ementaLinhas = doc.splitTextToSize(item.ementa || "", cw - pad * 2);
-    const ementaDisplay = ementaLinhas.slice(0, 5) as string[];
-    if (ementaLinhas.length > 5) ementaDisplay[4] = ementaDisplay[4] + "…";
+    // MUST set font before splitTextToSize so jsPDF uses correct metrics
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(ementaFontSize);
+    const ementaLinhas = doc.splitTextToSize(item.ementa || "", cw - pad * 2 - 6) as string[];
+    const maxLines = 4;
+    const ementaDisplay = ementaLinhas.slice(0, maxLines) as string[];
+    if (ementaLinhas.length > maxLines) ementaDisplay[maxLines - 1] = ementaDisplay[maxLines - 1] + "…";
 
-    // Estimate card height
-    const cardH = pad                           // top pad
-      + 14                                      // título linha 1
-      + (diasEmAberto !== null ? 13 : 0)        // dias em aberto
-      + 6                                       // gap before ementa
-      + ementaDisplay.length * 11               // ementa lines
-      + (hasFluxo ? 38 : 0)                     // fluxo section
-      + pad;                                    // bottom pad
+    const cardH = pad
+      + 16                                        // título
+      + (diasEmAberto !== null ? 14 : 0)          // dias em aberto
+      + 10                                        // gap before ementa
+      + ementaDisplay.length * ementaLineH        // ementa
+      + (hasFluxo ? 44 : 0)                       // fluxo
+      + pad;
 
-    if (y + cardH + 6 > H - 10 && idx > 0) {
+    if (y + cardH + 8 > H - 10 && idx > 0) {
       doc.addPage();
       pageNum++;
       drawPageHeader();
@@ -165,44 +170,46 @@ export function exportarSegovPDF(
 
     // ── Cartão com borda verde ───────────────────────────
     doc.setDrawColor(22, 163, 74);
-    doc.setLineWidth(1.2);
+    doc.setLineWidth(1.4);
     doc.rect(margin, y, cw, cardH, "S");
 
-    let cy = y + pad; // cursor dentro do card
+    let cy = y + pad;
 
-    // ── Linha 1: PL 2.114/2026 — Autor  |  Status ───────
+    // ── PL 2.114/2026 — Autor  |  Status ────────────────
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(30, 30, 30);
-    doc.text(titulo, margin + pad, cy + 10);
+    doc.setFontSize(10);
+    doc.setTextColor(25, 25, 25);
+    doc.text(titulo, margin + pad, cy + 11);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(80, 80, 80);
-    doc.text(item.status, W - margin - pad, cy + 10, { align: "right" });
-    cy += 14;
+    doc.setFontSize(8.5);
+    doc.setTextColor(90, 90, 90);
+    doc.text(item.status, W - margin - pad, cy + 11, { align: "right" });
+    cy += 16;
 
-    // ── Dias em aberto ───────────────────────────────────
+    // ── Dias em aberto (azul, à direita) ─────────────────
     if (diasEmAberto !== null) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
+      doc.setFontSize(8.5);
       doc.setTextColor(29, 78, 216);
-      doc.text(`${diasEmAberto} dias em aberto`, W - margin - pad, cy + 9, { align: "right" });
-      cy += 13;
+      doc.text(`${diasEmAberto} dias em aberto`, W - margin - pad, cy + 10, { align: "right" });
+      cy += 14;
     }
 
-    cy += 6;
+    cy += 10;
 
-    // ── Ementa ───────────────────────────────────────────
+    // ── Ementa (12pt, italic, com espaçamento correto) ───
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(8);
-    doc.setTextColor(60, 60, 60);
-    doc.text(ementaDisplay, margin + pad, cy);
-    cy += ementaDisplay.length * 11;
+    doc.setFontSize(ementaFontSize);
+    doc.setTextColor(55, 55, 55);
+    ementaDisplay.forEach((linha, i) => {
+      doc.text(linha, margin + pad, cy + i * ementaLineH);
+    });
+    cy += ementaDisplay.length * ementaLineH;
 
     // ── Fluxo de tramitação ──────────────────────────────
     if (hasFluxo) {
-      cy += 6;
+      cy += 10;
       const maxStepW = 72;
       const stepW = Math.min(maxStepW, cw / marcados.length);
       const startX = margin + pad;
@@ -230,13 +237,13 @@ export function exportarSegovPDF(
         }
 
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(6);
+        doc.setFontSize(6.5);
         doc.setTextColor(50, 50, 50);
         doc.text(step.labelCurto, x + 7, nodeY + 13, { align: "center" });
       });
     }
 
-    y += cardH + 6; // gap between cards
+    y += cardH + 8;
   });
 
   doc.save(nomeArquivo);
