@@ -41,6 +41,12 @@ export default function SessoesPage() {
 
   useEffect(() => { carregar() }, [])
 
+  async function excluir(id: string) {
+    if (!confirm('Excluir esta sessão encerrada? Esta ação não pode ser desfeita.')) return
+    await fetch(`/api/sessoes/${id}`, { method: 'DELETE' })
+    carregar()
+  }
+
   async function salvar() {
     await fetch("/api/sessoes", {
       method: "POST",
@@ -96,17 +102,27 @@ export default function SessoesPage() {
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Encerradas</p>
             {encerradas.map(s => (
-              <Link key={s.id} href={`/dashboard/sessoes/${s.id}`}
-                className="block rounded-xl p-4 mb-2 border-2 transition hover:shadow-md"
-                style={{ background: "#fee2e2", borderColor: "#fca5a5" }}>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="font-semibold text-red-900 text-sm">{TIPO_SESSAO[s.tipo] || s.tipo}</p>
-                  {s.numero && <span className="text-xs text-red-700 font-medium">Nº {s.numero}</span>}
-                </div>
-                <p className="text-xs text-red-800 capitalize">{fmtData(s.data)}</p>
-                {s.local && <p className="text-xs text-red-600 mt-0.5">{s.local}</p>}
-                <p className="text-xs text-red-700 mt-1">{s.itens?.length ?? 0} item(s) na pauta</p>
-              </Link>
+              <div key={s.id} className="relative mb-2">
+                <Link href={`/dashboard/sessoes/${s.id}`}
+                  className="block rounded-xl p-4 border-2 transition hover:shadow-md"
+                  style={{ background: "#fee2e2", borderColor: "#fca5a5" }}>
+                  <div className="flex items-center justify-between mb-1 pr-7">
+                    <p className="font-semibold text-red-900 text-sm">{TIPO_SESSAO[s.tipo] || s.tipo}</p>
+                    {s.numero && <span className="text-xs text-red-700 font-medium">Nº {s.numero}</span>}
+                  </div>
+                  <p className="text-xs text-red-800 capitalize">{fmtData(s.data)}</p>
+                  {s.local && <p className="text-xs text-red-600 mt-0.5">{s.local}</p>}
+                  <p className="text-xs text-red-700 mt-1">{s.itens?.length ?? 0} item(s) na pauta</p>
+                </Link>
+                <button
+                  onClick={() => excluir(s.id)}
+                  title="Excluir sessão"
+                  className="absolute top-3 right-3 p-1 rounded-lg text-red-400 hover:text-red-700 hover:bg-red-100 transition z-10">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             ))}
           </div>
         )}

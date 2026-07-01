@@ -21,6 +21,12 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   return NextResponse.json(data);
 }
 
+export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  await prisma.pautaItem.deleteMany({ where: { sessaoId: params.id } });
+  await prisma.sessao.delete({ where: { id: params.id } });
+  return NextResponse.json({ ok: true });
+}
+
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json();
   const { itens, ...rest } = body;
