@@ -68,8 +68,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                 </svg>
               </div>
               <div>
-                <p className="font-bold text-white text-xs leading-tight">Legislativo Pauta</p>
-                <p className="text-xs leading-tight" style={{ color: "#f0c040" }}>Câmara Municipal — Nova Lima</p>
+                <p className="font-bold text-white text-sm leading-tight">Legislativo</p>
+                <p className="text-xs leading-tight" style={{ color: "#f0c040" }}>Nova Lima</p>
               </div>
             </div>
           )}
