@@ -14,13 +14,13 @@ export type ProposicaoResumo = {
 }
 
 const STATUS_COR: Record<string, string> = {
-  'Aguardando':  '#eab308',
-  'Com Parecer': '#a855f7',
-  'Em análise':  '#3b82f6',
-  'Aprovado':    '#22c55e',
-  'Rejeitado':   '#ef4444',
-  'Arquivado':   '#9ca3af',
-  'Retirado':    '#f97316',
+  'Aguardando':  '#f59e0b', // âmbar
+  'Com Parecer': '#a855f7', // roxo (logo)
+  'Em análise':  '#3b82f6', // azul (logo)
+  'Aprovado':    '#22c55e', // verde (logo)
+  'Rejeitado':   '#ef4444', // vermelho
+  'Arquivado':   '#94a3b8', // slate
+  'Retirado':    '#f97316', // laranja (logo)
 }
 
 const STATUS_CHIP: Record<string, string> = {
@@ -39,10 +39,24 @@ const TIPO_COR: Record<string, string> = {
   IND: 'bg-teal-100 text-teal-800', MOC: 'bg-pink-100 text-pink-800',
 }
 
+// Paleta baseada nas cores da logomarca: laranja → roxo → azul → verde
 const VEREADOR_CORES = [
-  '#8B0000','#c0392b','#7b2d8b','#1d4ed8','#0e7490',
-  '#065f46','#92400e','#374151','#a21caf','#b45309',
-  '#047857','#be185d','#1e40af','#6d28d9','#0f766e','#9f1239',
+  '#f97316', // laranja (logo)
+  '#a855f7', // roxo   (logo)
+  '#3b82f6', // azul   (logo)
+  '#22c55e', // verde  (logo)
+  '#f59e0b', // âmbar
+  '#7c3aed', // violeta
+  '#0ea5e9', // céu
+  '#10b981', // esmeralda
+  '#ef4444', // vermelho
+  '#6366f1', // índigo
+  '#ec4899', // rosa
+  '#14b8a6', // teal
+  '#d946ef', // fúcsia
+  '#84cc16', // lima
+  '#0d9488', // ciano-escuro
+  '#8b5cf6', // lilás
 ]
 
 type Filtro = { tipo: 'vereador' | 'executivo'; valor: string } | null
