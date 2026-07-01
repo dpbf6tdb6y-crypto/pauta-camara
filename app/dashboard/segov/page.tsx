@@ -68,7 +68,7 @@ export default function SeggovPage() {
   }
 
   useEffect(() => {
-    fetch('/api/vereadores').then(r => r.json()).then(setVereadores)
+    fetch('/api/vereadores?poder=legislativo').then(r => r.json()).then(setVereadores)
     carregar()
   }, [])
 

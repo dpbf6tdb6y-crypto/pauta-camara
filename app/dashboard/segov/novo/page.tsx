@@ -16,7 +16,7 @@ export default function NovoSeggovPage() {
   })
 
   useEffect(() => {
-    fetch('/api/vereadores').then(r => r.json()).then(setVereadores)
+    fetch('/api/vereadores?poder=legislativo').then(r => r.json()).then(setVereadores)
   }, [])
 
   function set(field: string, value: string) {

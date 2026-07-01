@@ -3,14 +3,19 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [totalVereadores, totalComissoes, totalProposicoes, totalSessoes, liberadas, emTramitacao] =
+  const [totalVereadores, totalComissoes, totalProposicoes, totalSessoes, liberadas, emTramitacao,
+         segovTotal, segovAguardando, segovComParecer, segovAprovado] =
     await Promise.all([
-      prisma.vereador.count({ where: { ativo: true } }),
+      prisma.vereador.count({ where: { ativo: true, poder: "legislativo" } }),
       prisma.comissao.count({ where: { ativa: true } }),
       prisma.proposicao.count(),
       prisma.sessao.count(),
       prisma.proposicao.count({ where: { status: "em_tramitacao", dispensaParecer: true } }),
       prisma.proposicao.count({ where: { status: "em_tramitacao" } }),
+      prisma.segov.count(),
+      prisma.segov.count({ where: { status: "Aguardando" } }),
+      prisma.segov.count({ where: { status: "Com Parecer" } }),
+      prisma.segov.count({ where: { status: "Aprovado" } }),
     ]);
 
   const ultimasProposicoes = await prisma.proposicao.findMany({
@@ -127,6 +132,29 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-green-400 inline-block"></span>
             <span className="text-gray-600">Dispensadas (prontas para pauta): <strong>{liberadas}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      {/* SEGOV */}
+      <div className="bg-white rounded-xl shadow-sm p-5">
+        <h2 className="font-semibold text-gray-800 mb-4">Secretaria de Governo — SEGOV</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 text-center">
+            <p className="text-2xl font-bold text-gray-800">{segovTotal}</p>
+            <p className="text-xs text-gray-500 mt-1">Total de Proposições</p>
+          </div>
+          <div className="rounded-lg bg-yellow-50 border border-yellow-100 p-4 text-center">
+            <p className="text-2xl font-bold text-yellow-700">{segovAguardando}</p>
+            <p className="text-xs text-yellow-600 mt-1">Aguardando</p>
+          </div>
+          <div className="rounded-lg bg-purple-50 border border-purple-100 p-4 text-center">
+            <p className="text-2xl font-bold text-purple-700">{segovComParecer}</p>
+            <p className="text-xs text-purple-600 mt-1">Com Parecer</p>
+          </div>
+          <div className="rounded-lg bg-green-50 border border-green-100 p-4 text-center">
+            <p className="text-2xl font-bold text-green-700">{segovAprovado}</p>
+            <p className="text-xs text-green-600 mt-1">Aprovadas</p>
           </div>
         </div>
       </div>

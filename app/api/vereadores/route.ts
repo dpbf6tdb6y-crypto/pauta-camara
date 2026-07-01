@@ -1,8 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  const data = await prisma.vereador.findMany({ orderBy: { nome: "asc" } });
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const poder = searchParams.get("poder");
+  const apenasAtivos = searchParams.get("ativo") !== "false";
+
+  const data = await prisma.vereador.findMany({
+    where: {
+      ...(apenasAtivos ? { ativo: true } : {}),
+      ...(poder ? { poder } : {}),
+    },
+    orderBy: { nome: "asc" },
+  });
   return NextResponse.json(data);
 }
 

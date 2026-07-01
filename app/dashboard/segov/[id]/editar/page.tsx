@@ -65,7 +65,7 @@ export default function EditarSeggovPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/vereadores').then(r => r.json()),
+      fetch('/api/vereadores?poder=legislativo').then(r => r.json()),
       fetch('/api/segov').then(r => r.json()),
       fetch('/api/comissoes').then(r => r.json()),
     ]).then(([vers, todos, coms]) => {
