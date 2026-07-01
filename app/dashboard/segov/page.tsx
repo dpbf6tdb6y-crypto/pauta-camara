@@ -17,9 +17,10 @@ const FLUXO_DEF = [
   { key: 'dispensaIntersticio', labelCurto: 'D. Int.'  },
   { key: 'pedidoVista',         labelCurto: 'P. Vista' },
   { key: 'pedidoAdiamento',     labelCurto: 'P. Adj.'  },
-  { key: 'emenda',              labelCurto: 'Emenda'   },
-  { key: 'votacao1',            labelCurto: '1ª Vot.'  },
-  { key: 'votacao2',            labelCurto: '2ª Vot.'  },
+  { key: 'emenda',              labelCurto: 'Emenda'    },
+  { key: 'emendaNumero',        labelCurto: 'Nº Emenda' },
+  { key: 'votacao1',            labelCurto: '1ª Vot.'   },
+  { key: 'votacao2',            labelCurto: '2ª Vot.'   },
 ]
 
 function fmtFluxoData(iso?: string) {
@@ -330,7 +331,15 @@ export default function SeggovPage() {
                             {step.data?.comissaoNome && (
                               <span className="mt-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium text-center">{step.data.comissaoNome}</span>
                             )}
-                            {step.data?.nome1 && !step.data?.comissaoNome && (
+                            {step.data?.resultado && (
+                              <span className={`mt-1 text-xs px-1.5 py-0.5 rounded font-semibold text-center ${step.data.resultado === 'aprovado' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {step.data.resultado === 'aprovado' ? 'Aprov.' : 'Reprov.'}
+                              </span>
+                            )}
+                            {step.data?.numero && (
+                              <span className="mt-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-center">Nº {step.data.numero}{step.data.ano ? `/${step.data.ano}` : ''}</span>
+                            )}
+                            {step.data?.nome1 && !step.data?.comissaoNome && !step.data?.resultado && !step.data?.numero && (
                               <span className="mt-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-center truncate max-w-[80px]">{step.data.nome1}</span>
                             )}
                           </div>

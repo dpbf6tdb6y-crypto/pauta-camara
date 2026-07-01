@@ -15,10 +15,13 @@ type StepData = {
   nome2?: string
   nome3?: string
   data?: string
+  resultado?: string   // 'aprovado' | 'reprovado'
+  numero?: string      // nº da emenda
+  ano?: string         // ano da emenda
 }
 type StepState = { done: boolean; doneAt?: string; data?: StepData }
 type FluxoState = Record<string, StepState>
-type StepTipo = 'simples' | 'comissao' | 'comissao3nomes' | 'nome1' | 'data'
+type StepTipo = 'simples' | 'comissao' | 'comissao3nomes' | 'nome1' | 'data' | 'resultado' | 'emendaInfo'
 type StepDef = { key: string; label: string; labelCurto: string; tipo: StepTipo }
 
 const FLUXO_DEF: StepDef[] = [
@@ -33,9 +36,10 @@ const FLUXO_DEF: StepDef[] = [
   { key: 'dispensaIntersticio',label: 'Dispensa de Interstício',        labelCurto: 'D. Int.',   tipo: 'simples' },
   { key: 'pedidoVista',        label: 'Pedido de Vista',                labelCurto: 'P. Vista',  tipo: 'nome1' },
   { key: 'pedidoAdiamento',    label: 'Pedido de Adiamento de Votação', labelCurto: 'P. Adj.',   tipo: 'nome1' },
-  { key: 'emenda',             label: 'Emenda(s)',                      labelCurto: 'Emenda',    tipo: 'simples' },
-  { key: 'votacao1',           label: '1ª Votação',                     labelCurto: '1ª Vot.',   tipo: 'simples' },
-  { key: 'votacao2',           label: '2ª Votação',                     labelCurto: '2ª Vot.',   tipo: 'simples' },
+  { key: 'emenda',             label: 'Emenda(s)',                      labelCurto: 'Emenda',    tipo: 'resultado' },
+  { key: 'emendaNumero',       label: 'Nº / Ano da Emenda',             labelCurto: 'Nº Emenda', tipo: 'emendaInfo' },
+  { key: 'votacao1',           label: '1ª Votação',                     labelCurto: '1ª Vot.',   tipo: 'resultado' },
+  { key: 'votacao2',           label: '2ª Votação',                     labelCurto: '2ª Vot.',   tipo: 'resultado' },
 ]
 
 function formatNumero(n: string) {
@@ -157,6 +161,10 @@ export default function EditarSeggovPage() {
       data = { nome1: p.nome1 || '', nome2: p.nome2 || '', nome3: p.nome3 || '' }
     } else if (def.tipo === 'nome1') {
       data = { nome1: p.nome1 || '' }
+    } else if (def.tipo === 'resultado') {
+      data = { resultado: p.resultado || 'aprovado' }
+    } else if (def.tipo === 'emendaInfo') {
+      data = { numero: p.numero || '', ano: p.ano || '' }
     } else if (def.tipo === 'data') {
       if (!p.data) { alert('Selecione a data antes de marcar.'); return }
       doneAt = p.data + 'T12:00:00.000Z'
@@ -386,7 +394,8 @@ export default function EditarSeggovPage() {
               { cols: 'grid-cols-3', keys: ['comissaoConjunta', 'dispensaParecer', 'dispensaIntersticio'] },
               { cols: 'grid-cols-1', keys: ['comissaoEspecial'] },
               { cols: 'grid-cols-2', keys: ['pedidoVista', 'pedidoAdiamento'] },
-              { cols: 'grid-cols-3', keys: ['emenda', 'votacao1', 'votacao2'] },
+              { cols: 'grid-cols-1', keys: ['emenda'] },
+              { cols: 'grid-cols-3', keys: ['emendaNumero', 'votacao1', 'votacao2'] },
             ] as { cols: string; keys: string[] }[]).map((grupo, gi) => (
               <div key={gi} className={`grid ${grupo.cols} gap-4 items-start`}>
                 {grupo.keys.map(key => {
@@ -395,7 +404,7 @@ export default function EditarSeggovPage() {
                   const state = fluxo[def.key]
                   const done = !!state?.done
                   const p = pending[def.key] || {}
-                  const inline = def.tipo === 'data' || def.tipo === 'comissao3nomes'
+                  const inline = def.tipo === 'data' || def.tipo === 'comissao3nomes' || def.tipo === 'resultado' || def.tipo === 'emendaInfo'
 
                   const circle = (
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -430,10 +439,39 @@ export default function EditarSeggovPage() {
                               <input placeholder="Membro 3" value={p.nome3 || ''} onChange={e => setPendingData(def.key, 'nome3', e.target.value)} className={`flex-1 ${inpSm}`} />
                             </>
                           )}
+                          {!done && def.tipo === 'resultado' && (
+                            <div className="flex gap-1.5 flex-shrink-0">
+                              {(['aprovado', 'reprovado'] as const).map(r => (
+                                <button key={r} type="button"
+                                  onClick={() => setPendingData(def.key, 'resultado', r)}
+                                  className={`text-xs px-2.5 py-1 rounded-md border transition font-medium ${
+                                    p.resultado === r
+                                      ? r === 'aprovado' ? 'border-green-400 bg-green-50 text-green-700' : 'border-red-400 bg-red-50 text-red-700'
+                                      : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                                  }`}>
+                                  {r === 'aprovado' ? 'Aprovado' : 'Reprovado'}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {!done && def.tipo === 'emendaInfo' && (
+                            <>
+                              <input placeholder="Nº da emenda" value={p.numero || ''} onChange={e => setPendingData(def.key, 'numero', e.target.value)} className={`flex-1 ${inpSm}`} />
+                              <input placeholder="Ano" value={p.ano || ''} onChange={e => setPendingData(def.key, 'ano', e.target.value)} className={`w-20 flex-shrink-0 ${inpSm}`} />
+                            </>
+                          )}
                           {done && (
                             <div className="flex-1 flex flex-wrap items-center gap-1.5">
                               <span className="text-xs text-gray-400">{fmtData(state.doneAt)}</span>
-                              {state.data && [state.data.nome1, state.data.nome2, state.data.nome3].filter(Boolean).map((n, i) => (
+                              {state.data?.resultado && (
+                                <span className={`text-xs px-2 py-0.5 rounded font-semibold ${state.data.resultado === 'aprovado' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {state.data.resultado === 'aprovado' ? 'Aprovado' : 'Reprovado'}
+                                </span>
+                              )}
+                              {state.data?.numero && (
+                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Nº {state.data.numero}{state.data.ano ? `/${state.data.ano}` : ''}</span>
+                              )}
+                              {[state.data?.nome1, state.data?.nome2, state.data?.nome3].filter(Boolean).map((n, i) => (
                                 <span key={i} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{n}</span>
                               ))}
                             </div>
