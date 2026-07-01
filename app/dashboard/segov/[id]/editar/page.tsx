@@ -235,26 +235,24 @@ export default function EditarSeggovPage() {
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
 
         {/* Linha 1: Número | Ano | Tipo | Autor | Status | Dias em Aberto */}
-        <div className="grid grid-cols-6 gap-3 items-start">
-          <div>
+        <div className="flex gap-3 items-end">
+          <div className="w-24 flex-shrink-0">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Número</label>
             <input required value={formatNumero(form.numero)}
               onChange={e => set('numero', e.target.value.replace(/\./g, ''))}
               className={inp} />
           </div>
-          <div>
+          <div className="w-20 flex-shrink-0">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ano</label>
             <input value={form.ano} onChange={e => set('ano', e.target.value)} className={inp} />
           </div>
-          <div>
+          <div className="w-24 flex-shrink-0">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tipo</label>
             <select required value={form.tipo} onChange={e => set('tipo', e.target.value)} className={inp}>
               {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-
-          {/* Autor (dropdown + badges empilhados) */}
-          <div>
+          <div className="flex-1 min-w-0">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Autor</label>
             <select onChange={e => { adicionarAutor(e.target.value); e.target.value = '' }} className={inp}>
               <option value="">— Selecionar —</option>
@@ -263,34 +261,14 @@ export default function EditarSeggovPage() {
                 {vereadores.map((v: any) => <option key={v.id} value={v.id}>{v.nome}</option>)}
               </optgroup>
             </select>
-            {autores.length > 0 && (
-              <div className="mt-2 space-y-1.5">
-                {autores.map((a, i) => (
-                  <span key={i} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium ${
-                    a.isPE ? 'bg-orange-100 text-orange-800 border border-orange-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                  }`}>
-                    {a.isPE && <span>⚡</span>}
-                    <span className="flex-1 truncate">{a.nome}</span>
-                    <button type="button" onClick={() => removerAutor(i)} className="text-gray-400 hover:text-red-500 transition flex-shrink-0">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
-
-          <div>
+          <div className="w-36 flex-shrink-0">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</label>
             <select value={form.status} onChange={e => set('status', e.target.value)} className={inp}>
               {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-
-          {/* Dias em Aberto */}
-          <div>
+          <div className="w-44 flex-shrink-0">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Dias em Aberto</label>
             {diasEmAberto !== null ? (
               <div className={`rounded-lg border px-3 py-2 ${
@@ -312,6 +290,25 @@ export default function EditarSeggovPage() {
             )}
           </div>
         </div>
+
+        {/* Autores selecionados — linha abaixo */}
+        {autores.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {autores.map((a, i) => (
+              <span key={i} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                a.isPE ? 'bg-orange-100 text-orange-800 border border-orange-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+              }`}>
+                {a.isPE && <span>⚡</span>}
+                {a.nome}
+                <button type="button" onClick={() => removerAutor(i)} className="text-gray-400 hover:text-red-500 transition">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Última Movimentação */}
         {updatedAt && (
