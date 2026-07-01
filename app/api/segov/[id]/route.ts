@@ -17,6 +17,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       observacao: body.observacao || null,
       parecerComissao: body.parecerComissao || null,
       proxComissao: body.proxComissao || null,
+      fluxo: body.fluxo ?? undefined,
     },
     include: { vereador: true },
   });

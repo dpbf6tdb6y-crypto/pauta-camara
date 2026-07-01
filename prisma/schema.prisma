@@ -201,6 +201,7 @@ model Segov {
   parecerConjunto Boolean   @default(false)
   proxComissao    String?   // próxima comissão após o parecer
   dataParecere    DateTime? // data da sessão em que o parecer foi lido
+  fluxo           Json?     // fluxo de tramitação (passos marcados)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
