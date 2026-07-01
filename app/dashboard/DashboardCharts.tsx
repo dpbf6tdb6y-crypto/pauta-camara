@@ -1,7 +1,7 @@
 'use client'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, PieChart, Pie, Legend,
+  ResponsiveContainer, Cell, LabelList,
 } from 'recharts'
 
 export type VereadorData  = { nome: string; total: number }
@@ -24,38 +24,47 @@ const VEREADOR_CORES = [
 ]
 
 interface Props {
-  porVereador:       VereadorData[]
+  porVereador:        VereadorData[]
   porStatusExecutivo: StatusData[]
-  totalExecutivo:    number
+  totalExecutivo:     number
 }
 
 export default function DashboardCharts({ porVereador, porStatusExecutivo, totalExecutivo }: Props) {
-  const chartH = Math.max(280, porVereador.length * 36 + 40)
-
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="grid grid-cols-2 gap-3">
       {/* ── Proposições por Vereador ── */}
-      <div className="bg-white rounded-xl shadow-sm p-5">
-        <h2 className="font-semibold text-gray-800 mb-4">Proposições por Vereador</h2>
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+          Proposições por Vereador
+        </p>
         {porVereador.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-10">Nenhum dado disponível</p>
         ) : (
-          <ResponsiveContainer width="100%" height={chartH}>
-            <BarChart data={porVereador} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart
+              data={porVereador}
+              layout="vertical"
+              margin={{ left: 8, right: 40, top: 2, bottom: 2 }}
+            >
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10 }} hide />
               <YAxis
-                type="category" dataKey="nome" width={130}
-                tick={{ fontSize: 11 }} tickLine={false}
+                type="category" dataKey="nome" width={140}
+                tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
               />
               <Tooltip
                 formatter={(v: number) => [`${v} proposição(ões)`, 'Total']}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                contentStyle={{ fontSize: 11, borderRadius: 8 }}
               />
-              <Bar dataKey="total" radius={[0, 5, 5, 0]} maxBarSize={28}>
+              <Bar dataKey="total" radius={[0, 4, 4, 0]} maxBarSize={22}>
                 {porVereador.map((_, i) => (
                   <Cell key={i} fill={VEREADOR_CORES[i % VEREADOR_CORES.length]} />
                 ))}
+                <LabelList
+                  dataKey="total"
+                  position="right"
+                  style={{ fontSize: 11, fontWeight: 700, fill: '#374151' }}
+                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -63,49 +72,39 @@ export default function DashboardCharts({ porVereador, porStatusExecutivo, total
       </div>
 
       {/* ── Proposições do Executivo ── */}
-      <div className="bg-white rounded-xl shadow-sm p-5">
-        <div className="flex items-baseline gap-3 mb-4">
-          <h2 className="font-semibold text-gray-800">Proposições do Poder Executivo</h2>
-          <span className="text-3xl font-bold text-purple-700">{totalExecutivo}</span>
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="flex items-baseline gap-2 mb-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            Proposições do Poder Executivo
+          </p>
+          <span className="text-lg font-bold text-purple-700">{totalExecutivo}</span>
         </div>
         {totalExecutivo === 0 ? (
           <p className="text-gray-400 text-sm text-center py-10">Nenhuma proposição do Executivo</p>
-        ) : porStatusExecutivo.length > 1 ? (
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={porStatusExecutivo} margin={{ left: 0, right: 16, top: 4, bottom: 4 }}>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart
+              data={porStatusExecutivo}
+              margin={{ left: 0, right: 16, top: 22, bottom: 2 }}
+            >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="status" tick={{ fontSize: 11 }} tickLine={false} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} tickLine={false} />
+              <XAxis dataKey="status" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} hide />
               <Tooltip
                 formatter={(v: number) => [`${v} proposição(ões)`, 'Total']}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                contentStyle={{ fontSize: 11, borderRadius: 8 }}
               />
-              <Bar dataKey="total" radius={[5, 5, 0, 0]} maxBarSize={48}>
+              <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={52}>
                 {porStatusExecutivo.map(entry => (
                   <Cell key={entry.status} fill={STATUS_COR[entry.status] || '#6b7280'} />
                 ))}
+                <LabelList
+                  dataKey="total"
+                  position="top"
+                  style={{ fontSize: 12, fontWeight: 700, fill: '#374151' }}
+                />
               </Bar>
             </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          /* Só um status — mostra pie simples: executivo vs legislativo */
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie
-                data={porStatusExecutivo}
-                dataKey="total"
-                nameKey="status"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ status, total }) => `${status}: ${total}`}
-              >
-                {porStatusExecutivo.map(entry => (
-                  <Cell key={entry.status} fill={STATUS_COR[entry.status] || '#6b7280'} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-            </PieChart>
           </ResponsiveContainer>
         )}
       </div>

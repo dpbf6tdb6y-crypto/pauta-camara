@@ -28,16 +28,12 @@ export default async function DashboardPage() {
     orderBy: [{ ano: 'desc' }, { numero: 'asc' }],
   });
 
-  // ── Totais básicos ───────────────────────────────────────
   const total = itens.length;
 
   const porStatus: Record<string, number> = {};
   STATUS_LIST.forEach(s => { porStatus[s] = 0; });
-  itens.forEach(item => {
-    porStatus[item.status] = (porStatus[item.status] || 0) + 1;
-  });
+  itens.forEach(item => { porStatus[item.status] = (porStatus[item.status] || 0) + 1; });
 
-  // ── Resultado final (do fluxo JSONB) ────────────────────
   let aprovadoFinal = 0;
   let reprovadoFinal = 0;
   let somaDias = 0;
@@ -50,7 +46,6 @@ export default async function DashboardPage() {
       if (rf.data?.resultado === 'aprovado') aprovadoFinal++;
       else reprovadoFinal++;
     }
-    // Média de dias: pautado → resultadoFinal
     if (f.pautado?.doneAt && rf?.done && rf?.doneAt) {
       const dias = Math.floor(
         (new Date(rf.doneAt).getTime() - new Date(f.pautado.doneAt).getTime()) / 86400000
@@ -61,11 +56,9 @@ export default async function DashboardPage() {
 
   const mediaDias = contDias > 0 ? Math.round(somaDias / contDias) : null;
 
-  // ── Autores ──────────────────────────────────────────────
   const executivoItens = itens.filter(isExec);
   const totalExecutivo  = executivoItens.length;
 
-  // Proposições por vereador (não-executivo)
   const porVereadorMap: Record<string, number> = {};
   itens.forEach(item => {
     if (isExec(item)) return;
@@ -81,25 +74,22 @@ export default async function DashboardPage() {
 
   const totalVereadores = porVereador.length;
 
-  // Executivo por status
   const execStatus: Record<string, number> = {};
-  executivoItens.forEach(item => {
-    execStatus[item.status] = (execStatus[item.status] || 0) + 1;
-  });
+  executivoItens.forEach(item => { execStatus[item.status] = (execStatus[item.status] || 0) + 1; });
   const porStatusExecutivo = Object.entries(execStatus)
     .map(([status, total]) => ({ status, total }))
     .sort((a, b) => b.total - a.total);
 
-  // ── Render ───────────────────────────────────────────────
   return (
-    <div className="p-6 space-y-6 pb-10">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-500 text-sm">Visão geral do sistema legislativo</p>
+    <div className="p-3 space-y-3">
+      {/* Header */}
+      <div className="flex items-baseline gap-2">
+        <h1 className="text-lg font-bold text-gray-800">Dashboard</h1>
+        <span className="text-gray-400 text-sm">— Visão geral do sistema legislativo</span>
       </div>
 
-      {/* ── Resumo (4 cards) ── */}
-      <div className="grid grid-cols-4 gap-4">
+      {/* Stat cards */}
+      <div className="grid grid-cols-4 gap-3">
         <StatCard
           label="Total de Proposições" value={total} color="#8B0000"
           icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
@@ -115,54 +105,50 @@ export default async function DashboardPage() {
         <StatCard
           label="Média para Conclusão"
           value={mediaDias !== null ? `${mediaDias} dias` : '—'}
-          color="#0e7490" small
+          color="#0e7490"
           icon="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </div>
 
-      {/* ── Por Status ── */}
-      <div className="bg-white rounded-xl shadow-sm p-5">
-        <h2 className="font-semibold text-gray-800 mb-3">Por Status</h2>
-        <div className="grid grid-cols-7 gap-3">
-          {STATUS_LIST.map(s => {
-            const c = STATUS_STYLE[s];
-            return (
-              <div key={s} className={`rounded-lg border p-3 text-center ${c.bg} ${c.border}`}>
-                <p className={`text-2xl font-bold ${c.text}`}>{porStatus[s] || 0}</p>
-                <p className={`text-xs mt-1 ${c.text} font-medium leading-tight`}>{s}</p>
-              </div>
-            );
-          })}
+      {/* Status + Resultado Final — mesma linha */}
+      <div className="flex gap-3">
+        {/* Por Status */}
+        <div className="bg-white rounded-xl shadow-sm px-4 py-3 flex-1">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Por Status</p>
+          <div className="grid grid-cols-7 gap-2">
+            {STATUS_LIST.map(s => {
+              const c = STATUS_STYLE[s];
+              return (
+                <div key={s} className={`rounded-lg border p-2 text-center ${c.bg} ${c.border}`}>
+                  <p className={`text-xl font-bold ${c.text}`}>{porStatus[s] || 0}</p>
+                  <p className={`text-xs mt-0.5 ${c.text} font-medium leading-tight`}>{s}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* ── Resultado Final ── */}
-      <div className="bg-white rounded-xl shadow-sm p-5">
-        <h2 className="font-semibold text-gray-800 mb-3">Resultado Final (votação)</h2>
-        <div className="flex gap-4">
-          <div className="rounded-lg border border-green-200 bg-green-50 px-8 py-4 text-center">
-            <p className="text-3xl font-bold text-green-700">{aprovadoFinal}</p>
-            <p className="text-sm mt-1 text-green-600 font-medium">Aprovadas</p>
-          </div>
-          <div className="rounded-lg border border-red-200 bg-red-50 px-8 py-4 text-center">
-            <p className="text-3xl font-bold text-red-700">{reprovadoFinal}</p>
-            <p className="text-sm mt-1 text-red-600 font-medium">Reprovadas</p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-gray-50 px-8 py-4 text-center">
-            <p className="text-3xl font-bold text-gray-500">{total - aprovadoFinal - reprovadoFinal}</p>
-            <p className="text-sm mt-1 text-gray-500 font-medium">Em tramitação</p>
-          </div>
-          {mediaDias !== null && (
-            <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-8 py-4 text-center ml-auto">
-              <p className="text-3xl font-bold text-cyan-700">{mediaDias}</p>
-              <p className="text-sm mt-1 text-cyan-600 font-medium">Dias (média)</p>
-              <p className="text-xs text-cyan-500">do pautado à conclusão</p>
+        {/* Resultado Final */}
+        <div className="bg-white rounded-xl shadow-sm px-4 py-3 flex-shrink-0">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Resultado Final (votação)</p>
+          <div className="flex gap-2 h-[calc(100%-28px)] items-center">
+            <div className="rounded-lg border border-green-200 bg-green-50 px-5 py-2 text-center">
+              <p className="text-2xl font-bold text-green-700">{aprovadoFinal}</p>
+              <p className="text-xs mt-0.5 text-green-600 font-medium">Aprovadas</p>
             </div>
-          )}
+            <div className="rounded-lg border border-red-200 bg-red-50 px-5 py-2 text-center">
+              <p className="text-2xl font-bold text-red-700">{reprovadoFinal}</p>
+              <p className="text-xs mt-0.5 text-red-600 font-medium">Reprovadas</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-5 py-2 text-center">
+              <p className="text-2xl font-bold text-gray-500">{total - aprovadoFinal - reprovadoFinal}</p>
+              <p className="text-xs mt-0.5 text-gray-500 font-medium">Tramitando</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── Gráficos ── */}
+      {/* Gráficos */}
       <DashboardCharts
         porVereador={porVereador}
         porStatusExecutivo={porStatusExecutivo}
@@ -173,19 +159,19 @@ export default async function DashboardPage() {
 }
 
 function StatCard({
-  label, value, color, icon, small,
+  label, value, color, icon,
 }: {
-  label: string; value: string | number; color: string; icon: string; small?: boolean;
+  label: string; value: string | number; color: string; icon: string;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4 border-l-4" style={{ borderLeftColor: color }}>
-      <div className="rounded-lg p-3 flex-shrink-0" style={{ background: color }}>
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="bg-white rounded-xl shadow-sm px-4 py-3 flex items-center gap-3 border-l-4" style={{ borderLeftColor: color }}>
+      <div className="rounded-lg p-2 flex-shrink-0" style={{ background: color }}>
+        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
         </svg>
       </div>
       <div>
-        <p className={`font-bold text-gray-800 ${small ? 'text-xl' : 'text-2xl'}`}>{value}</p>
+        <p className="text-xl font-bold text-gray-800">{value}</p>
         <p className="text-gray-500 text-xs leading-tight">{label}</p>
       </div>
     </div>
