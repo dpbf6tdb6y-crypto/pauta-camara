@@ -20,6 +20,13 @@ const configItems = [
   { href: "/dashboard/configuracoes", label: "Configurações Gerais", icon: "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" },
 ];
 
+// Cores do tema executivo baseadas na logomarca
+const SIDEBAR_BG = "linear-gradient(180deg, #0a0f1e 0%, #0f172a 60%, #111827 100%)";
+const ACCENT_GRADIENT = "linear-gradient(135deg, #f97316 0%, #a855f7 100%)";
+const BORDER_COLOR = "rgba(255,255,255,0.08)";
+const NAV_INACTIVE = "rgba(255,255,255,0.55)";
+const NAV_HOVER_BG = "rgba(255,255,255,0.07)";
+
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -33,7 +40,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
-  // Abre o menu de config automaticamente se estiver numa rota de config
   useEffect(() => {
     if (configItems.some(i => pathname.startsWith(i.href))) setConfigAberto(true);
   }, [pathname]);
@@ -42,7 +48,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-3"
+            style={{ borderColor: "#a855f7", borderTopColor: "transparent" }} />
           <p className="text-gray-500 text-sm">Carregando...</p>
         </div>
       </div>
@@ -54,35 +61,41 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? "w-64" : "w-16"} flex flex-col transition-all duration-300 flex-shrink-0 shadow-lg sticky top-0 h-screen`}
-        style={{ background: "linear-gradient(180deg, #6B0000 0%, #8B0000 40%, #a93226 100%)" }}>
+      <aside
+        className={`${sidebarOpen ? "w-64" : "w-16"} flex flex-col transition-all duration-300 flex-shrink-0 shadow-xl sticky top-0 h-screen`}
+        style={{ background: SIDEBAR_BG }}>
 
-        {/* Header da sidebar */}
-        <div className="flex items-center justify-between p-4 border-b border-red-900">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4" style={{ borderBottom: `1px solid ${BORDER_COLOR}` }}>
           {sidebarOpen && (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow"
-                style={{ background: "#d4a017" }}>
+              {/* Logo com gradiente da marca */}
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
+                style={{ background: ACCENT_GRADIENT }}>
                 <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
                 </svg>
               </div>
               <div>
                 <p className="font-bold text-white text-sm leading-tight">Legislativo</p>
-                <p className="text-xs leading-tight" style={{ color: "#f0c040" }}>Nova Lima</p>
+                <p className="text-xs leading-tight" style={{ color: "#f97316" }}>Nova Lima</p>
               </div>
             </div>
           )}
           {!sidebarOpen && (
-            <div className="w-8 h-8 rounded-full flex items-center justify-center mx-auto"
-              style={{ background: "#d4a017" }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center mx-auto shadow"
+              style={{ background: ACCENT_GRADIENT }}>
               <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16" />
               </svg>
             </div>
           )}
-          <button onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 rounded-lg text-red-200 hover:bg-red-900 hover:text-white transition ml-auto">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1.5 rounded-lg transition ml-auto"
+            style={{ color: NAV_INACTIVE }}
+            onMouseEnter={e => (e.currentTarget.style.background = NAV_HOVER_BG)}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -91,15 +104,16 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         {/* Navegação */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto mt-2">
-          {/* Itens principais */}
           {navItems.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link key={item.href} href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                  active ? "text-white font-semibold shadow-sm" : "text-red-200 hover:text-white hover:bg-red-900"
-                }`}
-                style={active ? { background: "#d4a017" } : {}}>
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all"
+                style={active
+                  ? { background: ACCENT_GRADIENT, color: "#fff", fontWeight: 600 }
+                  : { color: NAV_INACTIVE }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = NAV_HOVER_BG; if (!active) e.currentTarget.style.color = "#fff"; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; if (!active) e.currentTarget.style.color = NAV_INACTIVE; }}>
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                 </svg>
@@ -107,17 +121,18 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
-
         </nav>
 
-        {/* Configurações — acima do footer */}
-        <div className="px-2 pb-1 border-t border-red-900 pt-2">
+        {/* Configurações */}
+        <div className="px-2 pb-1 pt-2" style={{ borderTop: `1px solid ${BORDER_COLOR}` }}>
           <button
             onClick={() => { if (sidebarOpen) setConfigAberto(v => !v); }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-              configAtiva ? "text-white font-semibold shadow-sm" : "text-red-200 hover:text-white hover:bg-red-900"
-            }`}
-            style={configAtiva && !configAberto ? { background: "#d4a017" } : {}}>
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all"
+            style={configAtiva && !configAberto
+              ? { background: ACCENT_GRADIENT, color: "#fff", fontWeight: 600 }
+              : { color: NAV_INACTIVE }}
+            onMouseEnter={e => { if (!configAtiva || configAberto) { e.currentTarget.style.background = NAV_HOVER_BG; e.currentTarget.style.color = "#fff"; } }}
+            onMouseLeave={e => { if (!configAtiva || configAberto) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = NAV_INACTIVE; } }}>
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -133,15 +148,17 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             )}
           </button>
           {sidebarOpen && configAberto && (
-            <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-red-700 pl-2">
+            <div className="ml-3 mt-0.5 space-y-0.5 pl-2" style={{ borderLeft: `2px solid rgba(168,85,247,0.3)` }}>
               {configItems.map((item) => {
                 const active = pathname.startsWith(item.href);
                 return (
                   <Link key={item.href} href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all ${
-                      active ? "text-white font-semibold shadow-sm" : "text-red-200 hover:text-white hover:bg-red-900"
-                    }`}
-                    style={active ? { background: "#d4a017" } : {}}>
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all"
+                    style={active
+                      ? { background: ACCENT_GRADIENT, color: "#fff", fontWeight: 600 }
+                      : { color: NAV_INACTIVE }}
+                    onMouseEnter={e => { if (!active) { e.currentTarget.style.background = NAV_HOVER_BG; e.currentTarget.style.color = "#fff"; } }}
+                    onMouseLeave={e => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = NAV_INACTIVE; } }}>
                     <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                     </svg>
@@ -153,15 +170,19 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        {/* Footer da sidebar */}
-        <div className="p-3 border-t border-red-900 space-y-2">
+        {/* Footer */}
+        <div className="p-3 space-y-2" style={{ borderTop: `1px solid ${BORDER_COLOR}` }}>
           {sidebarOpen && (
-            <p className="text-red-200 text-xs px-1">
-              <span className="text-red-400">Usuário:</span> {session?.user?.name}
+            <p className="text-xs px-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+              <span style={{ color: "rgba(255,255,255,0.5)" }}>Usuário:</span> {session?.user?.name}
             </p>
           )}
-          <button onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center gap-2 text-red-300 hover:text-white text-xs transition w-full px-1">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex items-center gap-2 text-xs transition w-full px-1"
+            style={{ color: "rgba(255,255,255,0.4)" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+            onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}>
             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
@@ -172,7 +193,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
       {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col overflow-auto">
-        {/* Topbar — fixo no topo */}
         <header className="bg-white shadow-sm px-5 py-2 flex items-center justify-between flex-shrink-0 sticky top-0 z-40">
           <TopbarLeft />
           <TopbarRight />
@@ -180,8 +200,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => window.location.reload()}
               title="Atualizar sistema"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition"
-            >
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>

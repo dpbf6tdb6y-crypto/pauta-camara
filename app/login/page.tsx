@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -28,37 +27,48 @@ export default function LoginPage() {
     <div className="min-h-screen flex">
       {/* Lado esquerdo — identidade visual */}
       <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center text-white relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #8B0000 0%, #c0392b 50%, #e74c3c 100%)" }}>
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%)", backgroundSize: "20px 20px" }} />
-        <div className="relative z-10 text-center px-8">
-          {/* Brasão */}
-          <div className="w-32 h-32 mx-auto mb-6 bg-white rounded-full flex items-center justify-center shadow-2xl">
-            <svg className="w-20 h-20" viewBox="0 0 100 100" fill="none">
-              <circle cx="50" cy="50" r="45" fill="#c0392b" stroke="#d4a017" strokeWidth="3"/>
-              <text x="50" y="40" textAnchor="middle" fill="#d4a017" fontSize="12" fontWeight="bold">CÂMARA</text>
-              <text x="50" y="55" textAnchor="middle" fill="white" fontSize="10">MUNICIPAL</text>
-              <text x="50" y="68" textAnchor="middle" fill="#d4a017" fontSize="9">NOVA LIMA</text>
+        style={{ background: "linear-gradient(160deg, #0a0f1e 0%, #0f172a 50%, #111827 100%)" }}>
+
+        {/* Decoração de fundo — linhas sutis */}
+        <div className="absolute inset-0 opacity-5"
+          style={{ backgroundImage: "repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%)", backgroundSize: "24px 24px" }} />
+
+        {/* Círculo decorativo grande */}
+        <div className="absolute top-[-120px] right-[-120px] w-80 h-80 rounded-full opacity-10"
+          style={{ background: "linear-gradient(135deg, #f97316, #a855f7)" }} />
+        <div className="absolute bottom-[-100px] left-[-100px] w-64 h-64 rounded-full opacity-10"
+          style={{ background: "linear-gradient(135deg, #3b82f6, #22c55e)" }} />
+
+        <div className="relative z-10 text-center px-10">
+          {/* Logo */}
+          <div className="w-28 h-28 mx-auto mb-8 rounded-3xl flex items-center justify-center shadow-2xl"
+            style={{ background: "linear-gradient(135deg, #f97316 0%, #a855f7 100%)" }}>
+            <svg className="w-16 h-16 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold mb-2">Legislativo</h1>
-          <h2 className="text-2xl font-bold mb-1" style={{ color: "#f0c040" }}>Nova Lima</h2>
-          <div className="w-16 h-1 mx-auto mt-4 mb-6 rounded" style={{ background: "#d4a017" }} />
-          <p className="text-lg opacity-90">Sistema de Gestão de Pautas</p>
-          <p className="text-sm opacity-70 mt-2">Em compromisso com o cidadão</p>
+
+          <h1 className="text-4xl font-bold mb-2 text-white tracking-tight">Legislativo</h1>
+          <h2 className="text-2xl font-semibold mb-1" style={{ color: "#f97316" }}>Nova Lima</h2>
+          <div className="w-14 h-0.5 mx-auto mt-5 mb-6 rounded"
+            style={{ background: "linear-gradient(90deg, #f97316, #a855f7)" }} />
+          <p className="text-base opacity-70 font-light tracking-wide">Sistema de Gestão de Pautas</p>
+          <p className="text-sm opacity-40 mt-2 tracking-wider uppercase text-xs">Em compromisso com o cidadão</p>
         </div>
       </div>
 
       {/* Lado direito — formulário */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-6">
         <div className="w-full max-w-sm">
+
           {/* Logo mobile */}
           <div className="lg:hidden text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: "linear-gradient(135deg, #8B0000, #c0392b)" }}>
-              <svg className="w-12 h-12" viewBox="0 0 100 100" fill="none">
-                <text x="50" y="45" textAnchor="middle" fill="#d4a017" fontSize="14" fontWeight="bold">CM</text>
-                <text x="50" y="65" textAnchor="middle" fill="white" fontSize="11">NL</text>
+            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-lg"
+              style={{ background: "linear-gradient(135deg, #f97316 0%, #a855f7 100%)" }}>
+              <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
               </svg>
             </div>
             <h1 className="text-xl font-bold text-gray-800">Legislativo Nova Lima</h1>
@@ -66,7 +76,7 @@ export default function LoginPage() {
 
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-1">Entrar</h2>
-            <p className="text-gray-500 text-sm mb-6">Sistema de Gestão de Pautas</p>
+            <p className="text-gray-400 text-sm mb-6">Sistema de Gestão de Pautas</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -75,9 +85,8 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                  style={{ "--tw-ring-color": "#c0392b" } as any}
-                  onFocus={e => e.target.style.borderColor = "#c0392b"}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none transition"
+                  onFocus={e => e.target.style.borderColor = "#a855f7"}
                   onBlur={e => e.target.style.borderColor = "#d1d5db"}
                   placeholder="seu@email.com"
                   required
@@ -89,8 +98,8 @@ export default function LoginPage() {
                   type="password"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
-                  onFocus={e => e.target.style.borderColor = "#c0392b"}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none transition"
+                  onFocus={e => e.target.style.borderColor = "#a855f7"}
                   onBlur={e => e.target.style.borderColor = "#d1d5db"}
                   placeholder="••••••••"
                   required
@@ -104,9 +113,8 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full text-white rounded-lg py-2.5 text-sm font-semibold disabled:opacity-60 transition hover:opacity-90"
-                style={{ background: "linear-gradient(135deg, #8B0000, #c0392b)" }}
-              >
+                className="w-full text-white rounded-lg py-2.5 text-sm font-semibold disabled:opacity-60 transition hover:opacity-90 shadow-md"
+                style={{ background: "linear-gradient(135deg, #f97316 0%, #a855f7 100%)" }}>
                 {loading ? "Entrando..." : "Entrar"}
               </button>
             </form>
