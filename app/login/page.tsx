@@ -41,8 +41,8 @@ export default function LoginPage() {
               <text x="50" y="68" textAnchor="middle" fill="#d4a017" fontSize="9">NOVA LIMA</text>
             </svg>
           </div>
-          <h1 className="text-3xl font-bold mb-2">Câmara Municipal</h1>
-          <h2 className="text-2xl font-bold mb-1" style={{ color: "#f0c040" }}>Nova Lima — MG</h2>
+          <h1 className="text-3xl font-bold mb-2">Legislativo</h1>
+          <h2 className="text-2xl font-bold mb-1" style={{ color: "#f0c040" }}>Nova Lima</h2>
           <div className="w-16 h-1 mx-auto mt-4 mb-6 rounded" style={{ background: "#d4a017" }} />
           <p className="text-lg opacity-90">Sistema de Gestão de Pautas</p>
           <p className="text-sm opacity-70 mt-2">Em compromisso com o cidadão</p>
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 <text x="50" y="65" textAnchor="middle" fill="white" fontSize="11">NL</text>
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-gray-800">Câmara Municipal de Nova Lima</h1>
+            <h1 className="text-xl font-bold text-gray-800">Legislativo Nova Lima</h1>
           </div>
 
           <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -113,7 +113,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-xs text-gray-400 mt-6">
-            Câmara Municipal de Nova Lima — MG
+            Legislativo Nova Lima
           </p>
         </div>
       </div>
