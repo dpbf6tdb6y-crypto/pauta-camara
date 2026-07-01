@@ -377,112 +377,79 @@ export default function EditarSeggovPage() {
             </div>
           )}
 
-          {/* ── Checklist de etapas ── */}
-          <div className="grid grid-cols-3 gap-3 items-start">
-            {FLUXO_DEF.map((def, idx) => {
-              const state = fluxo[def.key]
-              const done = !!state?.done
-              const p = pending[def.key] || {}
-
-              return (
-                <div key={def.key}
-                  className={`rounded-lg border transition-all ${
-                    done ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'
-                  }`}>
-                  <div className="flex items-start gap-3 p-3">
-                    {/* Círculo numerado */}
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      done
-                        ? 'bg-green-500 text-white shadow-sm shadow-green-200'
-                        : 'bg-gray-100 text-gray-400 border border-gray-200'
-                    }`}>
-                      {done
-                        ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                          </svg>
-                        : <span className="text-xs font-bold">{idx + 1}</span>
-                      }
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      {/* Header da etapa */}
-                      <div className="flex items-center justify-between gap-3">
-                        <span className={`text-sm font-medium ${done ? 'text-green-700' : 'text-gray-700'}`}>
-                          {def.label}
-                        </span>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {done && (
-                            <span className="text-xs text-gray-400">{fmtData(state.doneAt)}</span>
-                          )}
+          {/* ── Checklist de etapas (agrupado) ── */}
+          <div className="space-y-3">
+            {([
+              { cols: 'grid-cols-2', keys: ['protocolado', 'pautado'] },
+              { cols: 'grid-cols-3', keys: ['comissao1', 'comissao2', 'comissao3'] },
+              { cols: 'grid-cols-2', keys: ['comissaoConjunta', 'comissaoEspecial'] },
+              { cols: 'grid-cols-3', keys: ['dispensaParecer', 'dispensaIntersticio', 'pedidoVista'] },
+              { cols: 'grid-cols-3', keys: ['pedidoAdiamento', 'votacao1', 'votacao2'] },
+            ] as { cols: string; keys: string[] }[]).map((grupo, gi) => (
+              <div key={gi} className={`grid ${grupo.cols} gap-3 items-start`}>
+                {grupo.keys.map(key => {
+                  const def = FLUXO_DEF.find(d => d.key === key)!
+                  const idx = FLUXO_DEF.indexOf(def)
+                  const state = fluxo[def.key]
+                  const done = !!state?.done
+                  const p = pending[def.key] || {}
+                  return (
+                    <div key={def.key} className={`rounded-lg border transition-all ${done ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
+                      <div className="flex items-start gap-3 p-3">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          done ? 'bg-green-500 text-white shadow-sm shadow-green-200' : 'bg-gray-100 text-gray-400 border border-gray-200'
+                        }`}>
                           {done
-                            ? <button type="button" onClick={() => desmarcar(def.key)}
-                                className="text-xs text-red-400 hover:text-red-600 transition px-1.5 py-0.5 rounded border border-red-200 hover:border-red-300 hover:bg-red-50">
-                                ✕
-                              </button>
-                            : <button type="button" onClick={() => marcar(def.key)}
-                                className="text-xs px-2.5 py-1 rounded-md bg-green-500 text-white hover:bg-green-600 transition font-medium shadow-sm whitespace-nowrap">
-                                Marcar
-                              </button>
-                          }
+                            ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                            : <span className="text-xs font-bold">{idx + 1}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`text-sm font-medium leading-tight ${done ? 'text-green-700' : 'text-gray-700'}`}>{def.label}</span>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {done && <span className="text-xs text-gray-400 whitespace-nowrap">{fmtData(state.doneAt)}</span>}
+                              {done
+                                ? <button type="button" onClick={() => desmarcar(def.key)}
+                                    className="text-xs text-red-400 hover:text-red-600 transition px-1.5 py-0.5 rounded border border-red-200 hover:border-red-300 hover:bg-red-50">✕</button>
+                                : <button type="button" onClick={() => marcar(def.key)}
+                                    className="text-xs px-2.5 py-1 rounded-md bg-green-500 text-white hover:bg-green-600 transition font-medium shadow-sm whitespace-nowrap">Marcar</button>
+                              }
+                            </div>
+                          </div>
+                          {done && state.data && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {state.data.comissaoNome && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">{state.data.comissaoNome}</span>}
+                              {[state.data.nome1, state.data.nome2, state.data.nome3].filter(Boolean).map((n, i) => (
+                                <span key={i} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{n}</span>
+                              ))}
+                            </div>
+                          )}
+                          {!done && def.tipo === 'comissao' && (
+                            <select value={p.comissaoId || ''} onChange={e => setPendingData(def.key, 'comissaoId', e.target.value)} className={`mt-2 ${inpSm}`}>
+                              <option value="">— Selecionar comissão —</option>
+                              {comissoes.map((c: any) => <option key={c.id} value={c.id}>{c.sigla ? `${c.sigla} — ${c.nome}` : c.nome}</option>)}
+                            </select>
+                          )}
+                          {!done && def.tipo === 'comissao3nomes' && (
+                            <div className="mt-2 space-y-1.5">
+                              <input placeholder="Membro 1" value={p.nome1 || ''} onChange={e => setPendingData(def.key, 'nome1', e.target.value)} className={inpSm} />
+                              <input placeholder="Membro 2" value={p.nome2 || ''} onChange={e => setPendingData(def.key, 'nome2', e.target.value)} className={inpSm} />
+                              <input placeholder="Membro 3" value={p.nome3 || ''} onChange={e => setPendingData(def.key, 'nome3', e.target.value)} className={inpSm} />
+                            </div>
+                          )}
+                          {!done && def.tipo === 'nome1' && (
+                            <input placeholder="Nome do solicitante" value={p.nome1 || ''} onChange={e => setPendingData(def.key, 'nome1', e.target.value)} className={`mt-2 ${inpSm}`} />
+                          )}
+                          {!done && def.tipo === 'data' && (
+                            <input type="date" value={p.data || ''} onChange={e => setPendingData(def.key, 'data', e.target.value)} className={`mt-2 ${inpSm}`} />
+                          )}
                         </div>
                       </div>
-
-                      {/* Resumo quando marcado */}
-                      {done && state.data && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {state.data.comissaoNome && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">{state.data.comissaoNome}</span>
-                          )}
-                          {[state.data.nome1, state.data.nome2, state.data.nome3].filter(Boolean).map((n, i) => (
-                            <span key={i} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{n}</span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Campos quando não marcado */}
-                      {!done && def.tipo === 'comissao' && (
-                        <select value={p.comissaoId || ''}
-                          onChange={e => setPendingData(def.key, 'comissaoId', e.target.value)}
-                          className={`mt-2 ${inpSm}`}>
-                          <option value="">— Selecionar comissão —</option>
-                          {comissoes.map((c: any) => (
-                            <option key={c.id} value={c.id}>
-                              {c.sigla ? `${c.sigla} — ${c.nome}` : c.nome}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-
-                      {!done && def.tipo === 'comissao3nomes' && (
-                        <div className="mt-2 space-y-1.5">
-                          <input placeholder="Membro 1" value={p.nome1 || ''}
-                            onChange={e => setPendingData(def.key, 'nome1', e.target.value)}
-                            className={inpSm} />
-                          <input placeholder="Membro 2" value={p.nome2 || ''}
-                            onChange={e => setPendingData(def.key, 'nome2', e.target.value)}
-                            className={inpSm} />
-                          <input placeholder="Membro 3" value={p.nome3 || ''}
-                            onChange={e => setPendingData(def.key, 'nome3', e.target.value)}
-                            className={inpSm} />
-                        </div>
-                      )}
-
-                      {!done && def.tipo === 'nome1' && (
-                        <input placeholder="Nome do solicitante" value={p.nome1 || ''}
-                          onChange={e => setPendingData(def.key, 'nome1', e.target.value)}
-                          className={`mt-2 ${inpSm}`} />
-                      )}
-
-                      {!done && def.tipo === 'data' && (
-                        <input type="date" value={p.data || ''}
-                          onChange={e => setPendingData(def.key, 'data', e.target.value)}
-                          className={`mt-2 ${inpSm}`} />
-                      )}
                     </div>
-                  </div>
-                </div>
-              )
-            })}
+                  )
+                })}
+              </div>
+            ))}
           </div>
         </div>
 
