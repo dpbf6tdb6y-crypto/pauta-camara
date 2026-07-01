@@ -15,9 +15,10 @@ type StepData = {
   nome2?: string
   nome3?: string
   data?: string
-  resultado?: string   // 'aprovado' | 'reprovado'
-  numero?: string      // nº da emenda
-  ano?: string         // ano da emenda
+  resultado?: string
+  numero?: string
+  ano?: string
+  emendaTipo?: string
 }
 type StepState = { done: boolean; doneAt?: string; data?: StepData }
 type FluxoState = Record<string, StepState>
@@ -25,21 +26,22 @@ type StepTipo = 'simples' | 'comissao' | 'comissao3nomes' | 'nome1' | 'data' | '
 type StepDef = { key: string; label: string; labelCurto: string; tipo: StepTipo }
 
 const FLUXO_DEF: StepDef[] = [
-  { key: 'protocolado',        label: 'Protocolado',                    labelCurto: 'Prot.',     tipo: 'simples' },
-  { key: 'pautado',            label: 'Pautado',                        labelCurto: 'Pautado',   tipo: 'data' },
-  { key: 'comissao1',          label: 'Comissão 1',                     labelCurto: 'Com. 1',    tipo: 'comissao' },
-  { key: 'comissao2',          label: 'Comissão 2',                     labelCurto: 'Com. 2',    tipo: 'comissao' },
-  { key: 'comissao3',          label: 'Comissão 3',                     labelCurto: 'Com. 3',    tipo: 'comissao' },
-  { key: 'comissaoEspecial',   label: 'Comissão Especial',              labelCurto: 'C. Esp.',   tipo: 'comissao3nomes' },
-  { key: 'comissaoConjunta',   label: 'Comissão Conjunta',              labelCurto: 'C. Conj.',  tipo: 'simples' },
-  { key: 'dispensaParecer',    label: 'Dispensa de Parecer',            labelCurto: 'D. Par.',   tipo: 'simples' },
-  { key: 'dispensaIntersticio',label: 'Dispensa de Interstício',        labelCurto: 'D. Int.',   tipo: 'simples' },
-  { key: 'pedidoVista',        label: 'Pedido de Vista',                labelCurto: 'P. Vista',  tipo: 'nome1' },
-  { key: 'pedidoAdiamento',    label: 'Pedido de Adiamento de Votação', labelCurto: 'P. Adj.',   tipo: 'nome1' },
-  { key: 'emenda',             label: 'Emenda(s)',                      labelCurto: 'Emenda',    tipo: 'resultado' },
-  { key: 'emendaNumero',       label: 'Nº / Ano da Emenda',             labelCurto: 'Nº Emenda', tipo: 'emendaInfo' },
-  { key: 'votacao1',           label: '1ª Votação',                     labelCurto: '1ª Vot.',   tipo: 'resultado' },
-  { key: 'votacao2',           label: '2ª Votação',                     labelCurto: '2ª Vot.',   tipo: 'resultado' },
+  { key: 'protocolado',        label: 'Protocolado',                    labelCurto: 'Prot.',      tipo: 'simples' },
+  { key: 'pautado',            label: 'Pautado',                        labelCurto: 'Pautado',    tipo: 'data' },
+  { key: 'comissao1',          label: 'Comissão 1',                     labelCurto: 'Com. 1',     tipo: 'comissao' },
+  { key: 'comissao2',          label: 'Comissão 2',                     labelCurto: 'Com. 2',     tipo: 'comissao' },
+  { key: 'comissao3',          label: 'Comissão 3',                     labelCurto: 'Com. 3',     tipo: 'comissao' },
+  { key: 'comissaoEspecial',   label: 'Comissão Especial',              labelCurto: 'C. Esp.',    tipo: 'comissao3nomes' },
+  { key: 'comissaoConjunta',   label: 'Comissão Conjunta',              labelCurto: 'C. Conj.',   tipo: 'simples' },
+  { key: 'dispensaParecer',    label: 'Dispensa de Parecer',            labelCurto: 'D. Par.',    tipo: 'simples' },
+  { key: 'dispensaIntersticio',label: 'Dispensa de Interstício',        labelCurto: 'D. Int.',    tipo: 'simples' },
+  { key: 'pedidoVista',        label: 'Pedido de Vista',                labelCurto: 'P. Vista',   tipo: 'nome1' },
+  { key: 'pedidoAdiamento',    label: 'Pedido de Adiamento de Votação', labelCurto: 'P. Adj.',    tipo: 'nome1' },
+  { key: 'emenda',             label: 'Emenda(s)',                      labelCurto: 'Emenda',     tipo: 'resultado' },
+  { key: 'emendaNumero',       label: 'Identificação da Emenda',        labelCurto: 'Id. Emenda', tipo: 'emendaInfo' },
+  { key: 'votacao1',           label: '1ª Votação',                     labelCurto: '1ª Vot.',    tipo: 'resultado' },
+  { key: 'votacao2',           label: '2ª Votação',                     labelCurto: '2ª Vot.',    tipo: 'resultado' },
+  { key: 'resultadoFinal',     label: 'Resultado Final',                labelCurto: 'Resultado',  tipo: 'resultado' },
 ]
 
 function formatNumero(n: string) {
@@ -90,11 +92,9 @@ export default function EditarSeggovPage() {
           parecerComissao: item.parecerComissao || '',
           proxComissao: item.proxComissao || '',
         })
-
         if (item.fluxo && typeof item.fluxo === 'object') {
           setFluxo(item.fluxo as FluxoState)
         }
-
         const lista: Autor[] = []
         const nomeRaw: string = item.autorNome || ''
         if (item.vereadorId) {
@@ -164,7 +164,7 @@ export default function EditarSeggovPage() {
     } else if (def.tipo === 'resultado') {
       data = { resultado: p.resultado || 'aprovado' }
     } else if (def.tipo === 'emendaInfo') {
-      data = { numero: p.numero || '', ano: p.ano || '' }
+      data = { emendaTipo: p.emendaTipo || 'PL', numero: p.numero || '', ano: p.ano || '' }
     } else if (def.tipo === 'data') {
       if (!p.data) { alert('Selecione a data antes de marcar.'); return }
       doneAt = p.data + 'T12:00:00.000Z'
@@ -172,7 +172,6 @@ export default function EditarSeggovPage() {
 
     setFluxo(prev => {
       const next = { ...prev, [key]: { done: true, doneAt, data } }
-      // Auto-marca Protocolado na mesma data quando Pautado é marcado
       if (key === 'pautado' && !prev['protocolado']?.done) {
         next['protocolado'] = { done: true, doneAt, data: {} }
       }
@@ -191,6 +190,11 @@ export default function EditarSeggovPage() {
       .map(d => ({ ...d, ...(fluxo[d.key] || {}) })),
     [fluxo]
   )
+
+  const graficoCor: 'verde' | 'vermelho' | 'normal' =
+    fluxo['resultadoFinal']?.done
+      ? fluxo['resultadoFinal'].data?.resultado === 'aprovado' ? 'verde' : 'vermelho'
+      : 'normal'
 
   const diasEmAberto = useMemo(() => {
     const st = fluxo['pautado']
@@ -225,7 +229,6 @@ export default function EditarSeggovPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 pb-10">
-      {/* Header */}
       <div className="flex items-center">
         <Link href="/dashboard/segov"
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition w-24">
@@ -243,7 +246,6 @@ export default function EditarSeggovPage() {
 
       <form onSubmit={salvar} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
 
-        {/* Linha 1: Número | Ano | Tipo | Autor | Status | Dias em Aberto */}
         <div className="flex gap-3 items-end">
           <div className="w-24 flex-shrink-0">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Número</label>
@@ -300,7 +302,6 @@ export default function EditarSeggovPage() {
           </div>
         </div>
 
-        {/* Autores selecionados — linha abaixo */}
         {autores.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {autores.map((a, i) => (
@@ -319,14 +320,12 @@ export default function EditarSeggovPage() {
           </div>
         )}
 
-        {/* Última Movimentação */}
         {updatedAt && (
           <div className="text-xs text-gray-400">
             Última movimentação: <span className="font-medium text-gray-600">{fmtData(updatedAt)}</span>
           </div>
         )}
 
-        {/* Ementa */}
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ementa</label>
           <textarea required rows={6} value={form.ementa} onChange={e => set('ementa', e.target.value)}
@@ -342,7 +341,6 @@ export default function EditarSeggovPage() {
             Fluxo de Tramitação
           </h3>
 
-          {/* ── Gráfico: só os passos marcados ── */}
           {marcados.length > 0 && (
             <div className="mb-6 bg-gray-50 rounded-xl border border-gray-200 p-4 overflow-x-auto">
               <div className="flex items-start" style={{ gap: 0 }}>
@@ -350,27 +348,43 @@ export default function EditarSeggovPage() {
                   const isLast = idx === marcados.length - 1
                   return (
                   <div key={step.key} className="flex items-start flex-shrink-0">
-                    {/* Step node */}
                     <div className="flex flex-col items-center" style={{ minWidth: '88px' }}>
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${isLast ? 'bg-blue-500 shadow-blue-200' : 'bg-green-500 shadow-green-200'}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${
+                        graficoCor === 'vermelho' ? 'bg-red-500 shadow-red-200' :
+                        (graficoCor === 'normal' && isLast) ? 'bg-blue-500 shadow-blue-200' :
+                        'bg-green-500 shadow-green-200'
+                      }`}>
                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                      <p className={`text-xs font-semibold mt-1.5 text-center leading-tight px-1 ${isLast ? 'text-blue-600' : 'text-gray-700'}`}>{step.labelCurto}</p>
+                      <p className={`text-xs font-semibold mt-1.5 text-center leading-tight px-1 ${
+                        graficoCor === 'vermelho' ? 'text-red-700' :
+                        (graficoCor === 'normal' && isLast) ? 'text-blue-600' :
+                        'text-gray-700'
+                      }`}>{step.labelCurto}</p>
                       <p className="text-xs text-gray-400 text-center mt-0.5">{fmtData(step.doneAt)}</p>
                       {step.data?.comissaoNome && (
                         <span className="mt-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium text-center">{step.data.comissaoNome}</span>
                       )}
-                      {step.data?.nome1 && !step.data?.comissaoNome && (
+                      {step.data?.resultado && (
+                        <span className={`mt-1 text-xs px-1.5 py-0.5 rounded font-semibold text-center ${step.data.resultado === 'aprovado' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {step.data.resultado === 'aprovado' ? 'Aprov.' : 'Reprov.'}
+                        </span>
+                      )}
+                      {step.data?.numero && (
+                        <span className="mt-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-center">
+                          {step.data.emendaTipo ? `${step.data.emendaTipo} ` : ''}{step.data.numero}{step.data.ano ? `/${step.data.ano}` : ''}
+                        </span>
+                      )}
+                      {step.data?.nome1 && !step.data?.comissaoNome && !step.data?.resultado && !step.data?.numero && (
                         <span className="mt-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-center truncate max-w-[80px]">{step.data.nome1}</span>
                       )}
                     </div>
-                    {/* Connector */}
                     {idx < marcados.length - 1 && (
                       <div className="flex-shrink-0 mt-5">
-                        <div className="h-0.5 w-6 bg-green-400" />
-                        <div className="w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-l-[6px] border-l-green-400 -mt-[3.5px] ml-6" />
+                        <div className={`h-0.5 w-6 ${graficoCor === 'vermelho' ? 'bg-red-400' : 'bg-green-400'}`} />
+                        <div className={`w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-l-[6px] -mt-[3.5px] ml-6 ${graficoCor === 'vermelho' ? 'border-l-red-400' : 'border-l-green-400'}`} />
                       </div>
                     )}
                   </div>
@@ -386,7 +400,6 @@ export default function EditarSeggovPage() {
             </div>
           )}
 
-          {/* ── Checklist de etapas (agrupado) ── */}
           <div className="space-y-4">
             {([
               { cols: 'grid-cols-2', keys: ['protocolado', 'pautado'] },
@@ -396,6 +409,7 @@ export default function EditarSeggovPage() {
               { cols: 'grid-cols-2', keys: ['pedidoVista', 'pedidoAdiamento'] },
               { cols: 'grid-cols-1', keys: ['emenda'] },
               { cols: 'grid-cols-3', keys: ['emendaNumero', 'votacao1', 'votacao2'] },
+              { cols: 'grid-cols-1', keys: ['resultadoFinal'] },
             ] as { cols: string; keys: string[] }[]).map((grupo, gi) => (
               <div key={gi} className={`grid ${grupo.cols} gap-4 items-start`}>
                 {grupo.keys.map(key => {
@@ -405,6 +419,12 @@ export default function EditarSeggovPage() {
                   const done = !!state?.done
                   const p = pending[def.key] || {}
                   const inline = def.tipo === 'data' || def.tipo === 'comissao3nomes' || def.tipo === 'resultado' || def.tipo === 'emendaInfo'
+
+                  const cardClass = !done
+                    ? 'border-gray-200 bg-white'
+                    : def.key === 'resultadoFinal'
+                      ? (state?.data?.resultado === 'reprovado' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-100')
+                      : 'border-green-300 bg-green-50'
 
                   const circle = (
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -423,9 +443,8 @@ export default function EditarSeggovPage() {
                         className="text-xs px-2.5 py-1 rounded-md bg-green-500 text-white hover:bg-green-600 transition font-medium shadow-sm whitespace-nowrap flex-shrink-0">Marcar</button>
 
                   return (
-                    <div key={def.key} className={`rounded-xl border-2 shadow-sm transition-all ${done ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'}`}>
+                    <div key={def.key} className={`rounded-xl border-2 shadow-sm transition-all ${cardClass}`}>
                       {inline ? (
-                        // Layout inline: label + inputs na mesma linha
                         <div className="flex items-center gap-3 p-3">
                           {circle}
                           <span className={`text-sm font-medium flex-shrink-0 ${done ? 'text-green-700' : 'text-gray-700'}`}>{def.label}</span>
@@ -456,7 +475,10 @@ export default function EditarSeggovPage() {
                           )}
                           {!done && def.tipo === 'emendaInfo' && (
                             <>
-                              <input placeholder="Nº da emenda" value={p.numero || ''} onChange={e => setPendingData(def.key, 'numero', e.target.value)} className={`flex-1 ${inpSm}`} />
+                              <select value={p.emendaTipo || 'PL'} onChange={e => setPendingData(def.key, 'emendaTipo', e.target.value)} className={`w-20 flex-shrink-0 ${inpSm}`}>
+                                {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                              <input placeholder="Número" value={p.numero || ''} onChange={e => setPendingData(def.key, 'numero', e.target.value)} className={`flex-1 ${inpSm}`} />
                               <input placeholder="Ano" value={p.ano || ''} onChange={e => setPendingData(def.key, 'ano', e.target.value)} className={`w-20 flex-shrink-0 ${inpSm}`} />
                             </>
                           )}
@@ -469,7 +491,9 @@ export default function EditarSeggovPage() {
                                 </span>
                               )}
                               {state.data?.numero && (
-                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Nº {state.data.numero}{state.data.ano ? `/${state.data.ano}` : ''}</span>
+                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                                  {state.data.emendaTipo ? `${state.data.emendaTipo} ` : ''}{state.data.numero}{state.data.ano ? `/${state.data.ano}` : ''}
+                                </span>
                               )}
                               {[state.data?.nome1, state.data?.nome2, state.data?.nome3].filter(Boolean).map((n, i) => (
                                 <span key={i} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{n}</span>
@@ -479,7 +503,6 @@ export default function EditarSeggovPage() {
                           {btnMarcar}
                         </div>
                       ) : (
-                        // Layout empilhado padrão
                         <div className="flex items-start gap-3 p-3">
                           <div className="mt-0.5">{circle}</div>
                           <div className="flex-1 min-w-0">
@@ -518,7 +541,6 @@ export default function EditarSeggovPage() {
           </div>
         </div>
 
-        {/* Botões */}
         <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
           <Link href="/dashboard/segov"
             className="px-5 py-2.5 rounded-lg text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
