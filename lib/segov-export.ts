@@ -95,6 +95,10 @@ export function exportarSegovExcel(
   XLSX.writeFile(wb, nomeArquivo);
 }
 
+function fmtNumero(n: string) {
+  return n.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
 export function exportarSegovPDF(
   itens: SegovItem[],
   _colunas?: ColunasKey[],
@@ -105,26 +109,27 @@ export function exportarSegovPDF(
   const H = 595.28;
   const margin = 36;
   const cw = W - 2 * margin;
+  const pad = 10; // inner padding inside card
 
   let pageNum = 1;
 
   function drawPageHeader() {
     doc.setFillColor(139, 0, 0);
-    doc.rect(0, 0, W, 26, "F");
+    doc.rect(0, 0, W, 24, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
-    doc.text("SEGOV — Secretaria de Governo  |  Câmara Municipal de Nova Lima", margin, 17);
+    doc.text("SEGOV — Secretaria de Governo  |  Câmara Municipal de Nova Lima", margin, 16);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.text(
       `Gerado em ${new Date().toLocaleDateString("pt-BR")}  |  ${itens.length} proposição(ões)  |  Pág. ${pageNum}`,
-      W - margin, 17, { align: "right" }
+      W - margin, 16, { align: "right" }
     );
   }
 
   drawPageHeader();
-  let y = 40;
+  let y = 32;
 
   itens.forEach((item, idx) => {
     const fluxo = (item.fluxo || {}) as Record<string, { done: boolean; doneAt?: string; data?: any }>;
@@ -136,66 +141,72 @@ export function exportarSegovPDF(
     const autor = autorDe(item);
     const marcados = FLUXO_DEF_EXPORT.filter(d => fluxo[d.key]?.done);
     const hasFluxo = marcados.length > 0;
+    const titulo = `${item.tipo} ${fmtNumero(item.numero)}/${item.ano}  —  ${autor}`;
 
-    const ementaLinhas = doc.splitTextToSize(item.ementa || "", cw - 16);
-    const ementaDisplay = ementaLinhas.slice(0, 5);
+    const ementaLinhas = doc.splitTextToSize(item.ementa || "", cw - pad * 2);
+    const ementaDisplay = ementaLinhas.slice(0, 5) as string[];
     if (ementaLinhas.length > 5) ementaDisplay[4] = ementaDisplay[4] + "…";
 
-    const cardH = 24 + 18 + 6 + ementaDisplay.length * 11 + (hasFluxo ? 40 : 0) + 14;
+    // Estimate card height
+    const cardH = pad                           // top pad
+      + 14                                      // título linha 1
+      + (diasEmAberto !== null ? 13 : 0)        // dias em aberto
+      + 6                                       // gap before ementa
+      + ementaDisplay.length * 11               // ementa lines
+      + (hasFluxo ? 38 : 0)                     // fluxo section
+      + pad;                                    // bottom pad
 
-    if (y + cardH > H - margin + 10 && idx > 0) {
+    if (y + cardH + 6 > H - 10 && idx > 0) {
       doc.addPage();
       pageNum++;
       drawPageHeader();
-      y = 40;
+      y = 32;
     }
 
-    // ── Cabeçalho da proposição ──────────────────────────
-    const resultado = fluxo["resultadoFinal"];
-    const aprovado  = resultado?.done && resultado?.data?.resultado === "aprovado";
-    const reprovado = resultado?.done && resultado?.data?.resultado !== "aprovado";
+    // ── Cartão com borda verde ───────────────────────────
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(1.2);
+    doc.rect(margin, y, cw, cardH, "S");
 
-    if (aprovado)       doc.setFillColor(22, 163, 74);   // green-600
-    else if (reprovado) doc.setFillColor(220, 38, 38);   // red-600
-    else                doc.setFillColor(126, 34, 206);  // purple-700
+    let cy = y + pad; // cursor dentro do card
 
-    doc.rect(margin, y, cw, 22, "F");
-
-    doc.setTextColor(255, 255, 255);
+    // ── Linha 1: PL 2.114/2026 — Autor  |  Status ───────
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(`${item.tipo} ${item.numero}/${item.ano}`, margin + 8, y + 15);
+    doc.setFontSize(9.5);
+    doc.setTextColor(30, 30, 30);
+    doc.text(titulo, margin + pad, cy + 10);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.text(item.status, W - margin - 8, y + 15, { align: "right" });
-    y += 24;
+    doc.setFontSize(8);
+    doc.setTextColor(80, 80, 80);
+    doc.text(item.status, W - margin - pad, cy + 10, { align: "right" });
+    cy += 14;
 
-    // ── Linha: Autor + Dias em Aberto ────────────────────
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(40, 40, 40);
-    doc.text(`Autor: ${autor}`, margin + 6, y + 12);
+    // ── Dias em aberto ───────────────────────────────────
     if (diasEmAberto !== null) {
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(29, 78, 216);  // blue-700
-      doc.text(`${diasEmAberto} dias em aberto`, W - margin - 6, y + 12, { align: "right" });
+      doc.setFontSize(8);
+      doc.setTextColor(29, 78, 216);
+      doc.text(`${diasEmAberto} dias em aberto`, W - margin - pad, cy + 9, { align: "right" });
+      cy += 13;
     }
-    y += 18;
+
+    cy += 6;
 
     // ── Ementa ───────────────────────────────────────────
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
-    doc.setTextColor(70, 70, 70);
-    doc.text(ementaDisplay, margin + 6, y + 6);
-    y += ementaDisplay.length * 11 + 6;
+    doc.setTextColor(60, 60, 60);
+    doc.text(ementaDisplay, margin + pad, cy);
+    cy += ementaDisplay.length * 11;
 
     // ── Fluxo de tramitação ──────────────────────────────
     if (hasFluxo) {
+      cy += 6;
       const maxStepW = 72;
       const stepW = Math.min(maxStepW, cw / marcados.length);
-      const startX = margin + 6;
-      const nodeY = y + 8;
+      const startX = margin + pad;
+      const nodeY = cy + 8;
 
       marcados.forEach((step, i) => {
         const x = startX + i * stepW;
@@ -204,40 +215,28 @@ export function exportarSegovPDF(
 
         if (isReprov) doc.setFillColor(220, 38, 38);
         else          doc.setFillColor(22, 163, 74);
-
         doc.circle(x + 7, nodeY, 5.5, "F");
 
-        // checkmark
         doc.setDrawColor(255, 255, 255);
         doc.setLineWidth(1);
         doc.line(x + 4.5, nodeY, x + 6.5, nodeY + 2.5);
         doc.line(x + 6.5, nodeY + 2.5, x + 9.5, nodeY - 2.5);
 
-        // connector to next
         if (i < marcados.length - 1) {
           if (isReprov) doc.setDrawColor(220, 38, 38);
           else          doc.setDrawColor(22, 163, 74);
           doc.setLineWidth(0.8);
-          doc.line(x + 12.5, nodeY, x + stepW - 1, nodeY);
+          doc.line(x + 13, nodeY, x + stepW - 1, nodeY);
         }
 
-        // label
         doc.setFont("helvetica", "normal");
         doc.setFontSize(6);
-        doc.setTextColor(60, 60, 60);
-        doc.text(step.labelCurto, x + 7, nodeY + 12, { align: "center" });
+        doc.setTextColor(50, 50, 50);
+        doc.text(step.labelCurto, x + 7, nodeY + 13, { align: "center" });
       });
-
-      y += 36;
     }
 
-    // ── Separador ────────────────────────────────────────
-    if (idx < itens.length - 1) {
-      doc.setDrawColor(210, 210, 210);
-      doc.setLineWidth(0.5);
-      doc.line(margin, y + 3, W - margin, y + 3);
-      y += 12;
-    }
+    y += cardH + 6; // gap between cards
   });
 
   doc.save(nomeArquivo);
