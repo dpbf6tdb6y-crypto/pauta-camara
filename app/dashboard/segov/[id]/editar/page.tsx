@@ -33,6 +33,7 @@ const FLUXO_DEF: StepDef[] = [
   { key: 'dispensaIntersticio',label: 'Dispensa de Interstício',        labelCurto: 'D. Int.',   tipo: 'simples' },
   { key: 'pedidoVista',        label: 'Pedido de Vista',                labelCurto: 'P. Vista',  tipo: 'nome1' },
   { key: 'pedidoAdiamento',    label: 'Pedido de Adiamento de Votação', labelCurto: 'P. Adj.',   tipo: 'nome1' },
+  { key: 'emenda',             label: 'Emenda(s)',                      labelCurto: 'Emenda',    tipo: 'simples' },
   { key: 'votacao1',           label: '1ª Votação',                     labelCurto: '1ª Vot.',   tipo: 'simples' },
   { key: 'votacao2',           label: '2ª Votação',                     labelCurto: '2ª Vot.',   tipo: 'simples' },
 ]
@@ -381,7 +382,8 @@ export default function EditarSeggovPage() {
               { cols: 'grid-cols-3', keys: ['comissao1', 'comissao2', 'comissao3'] },
               { cols: 'grid-cols-3', keys: ['comissaoConjunta', 'dispensaParecer', 'dispensaIntersticio'] },
               { cols: 'grid-cols-1', keys: ['comissaoEspecial'] },
-              { cols: 'grid-cols-4', keys: ['pedidoVista', 'pedidoAdiamento', 'votacao1', 'votacao2'] },
+              { cols: 'grid-cols-2', keys: ['pedidoVista', 'pedidoAdiamento'] },
+              { cols: 'grid-cols-3', keys: ['emenda', 'votacao1', 'votacao2'] },
             ] as { cols: string; keys: string[] }[]).map((grupo, gi) => (
               <div key={gi} className={`grid ${grupo.cols} gap-4 items-start`}>
                 {grupo.keys.map(key => {

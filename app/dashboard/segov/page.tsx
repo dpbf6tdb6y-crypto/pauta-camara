@@ -17,6 +17,7 @@ const FLUXO_DEF = [
   { key: 'dispensaIntersticio', labelCurto: 'D. Int.'  },
   { key: 'pedidoVista',         labelCurto: 'P. Vista' },
   { key: 'pedidoAdiamento',     labelCurto: 'P. Adj.'  },
+  { key: 'emenda',              labelCurto: 'Emenda'   },
   { key: 'votacao1',            labelCurto: '1ª Vot.'  },
   { key: 'votacao2',            labelCurto: '2ª Vot.'  },
 ]
